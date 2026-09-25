@@ -1,0 +1,128 @@
+---
+// Test page for one scene: /test/<scene name>.
+// Add ?t=4.1 to freeze on a moment, or ?speed=0.5 to start at half speed.
+import Test from '../../layouts/Test.astro';
+import { ballPath } from '../../engine/ball';
+import { scenes } from '../../scenes';
+
+export function getStaticPaths() {
+  return Object.keys(scenes).map((scene) => ({ params: { scene } }));
+}
+
+const name = Astro.params.scene!;
+const scene = scenes[name]!;
+const level = name.split('.').at(-1);
+const events = ballPath(scene).events;
+const label = (e: (typeof events)[number]) =>
+  e.kind === 'hit' ? `${e.by} hits` : e.kind === 'floor' ? 'Floor bounce' : `${e.kind === 'glass' ? 'Glass' : 'Mesh'}, ${e.wall} wall`;
+---
+
+<Test title={`${scene.title} · test`}>
+  <main>
+    <header>
+      <h1><span>Situation</span>{scene.title}</h1>
+      <span class="chip">{level}</span>
+    </header>
+    <div data-scene={name}></div>
+    <details>
+      <summary>What the engine worked out</summary>
+      <p>The scene data lists {scene.shots.length} shots. The engine worked out every bounce from them.</p>
+      <table>
+        <thead><tr><th>Time</th><th>Event</th><th>x</th><th>y</th><th>Height</th></tr></thead>
+        <tbody>
+          {
+            events.map((e) => (
+              <tr class={e.kind === 'hit' ? 'hit' : ''}>
+                <td>{e.t.toFixed(2)} s</td>
+                <td>{label(e)}</td>
+                <td>{e.at[0].toFixed(1)}</td>
+                <td>{e.at[1].toFixed(1)}</td>
+                <td>{e.at[2].toFixed(1)} m</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </details>
+  </main>
+</Test>
+
+<script>
+  import { playScene } from '../../engine';
+  import { scenes } from '../../scenes';
+
+  const root = document.querySelector<HTMLElement>('[data-scene]')!;
+  const scene = scenes[root.dataset.scene!]!;
+  const params = new URLSearchParams(location.search);
+  const at = params.get('t');
+  const { playback } = playScene(root, scene, { autoplay: at === null });
+  if (at !== null) playback.seek(Number(at));
+  if (params.get('speed') === '0.5') playback.setSpeed(0.5);
+  // For poking at the scene from the browser console or a test script.
+  Object.assign(window, { playback });
+</script>
+
+<style>
+  main {
+    /* Room above and below the court for this page's header and padding. */
+    --sp-chrome: 250px;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 14px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  h1 {
+    margin: 0;
+    font: 700 21px/1 'Barlow Condensed', system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  h1 span {
+    display: block;
+    color: #7f8b98;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    margin-bottom: 4px;
+  }
+  .chip {
+    font: 700 12px/1 'Barlow Condensed', system-ui, sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: #ffd400;
+    color: #111;
+    padding: 5px 8px 4px;
+    border-radius: 3px;
+  }
+  details {
+    margin-top: 12px;
+    color: #aab6c2;
+    font-size: 14px;
+  }
+  summary {
+    cursor: pointer;
+    color: #e8edf2;
+    font-weight: 600;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 4px 6px;
+    border-bottom: 1px solid #1b2530;
+  }
+  tr.hit td {
+    color: #ff9d63;
+  }
+</style>

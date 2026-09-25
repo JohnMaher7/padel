@@ -1,0 +1,157 @@
+/* The Broadcast scene player. It's always dark, like a TV feed, whatever the page theme. */
+
+.sp {
+  --sp-ink: #e8edf2;
+  --sp-muted: #8391a0;
+  --sp-panel: #1b2530;
+  --sp-panel-hover: #26333f;
+  --sp-orange: #ff7a2f;
+  --sp-yellow: #ffd400;
+
+  /* Fill the width, but never so tall that the controls drop off an upright phone screen. */
+  width: 100%;
+  max-width: max(300px, calc((100dvh - var(--sp-chrome, 170px)) * 118 / 218));
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--sp-ink);
+  font: 500 16px/1.35 Barlow, system-ui, sans-serif;
+}
+
+.sp-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 118 / 218;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #223244, 0 14px 40px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sp-frame svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sp-cap {
+  min-height: 64px;
+  background: #060a0f;
+  border-left: 5px solid var(--sp-orange);
+  padding: 8px 12px 10px;
+  border-radius: 2px;
+}
+
+.sp-cap-step {
+  font: 600 12px/1 'Barlow Condensed', system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff9d63;
+  margin-bottom: 5px;
+}
+
+.sp-cap-text {
+  font: 600 17px/1.28 Barlow, system-ui, sans-serif;
+  text-wrap: pretty;
+}
+
+.sp-cap.decide {
+  border-left-color: var(--sp-yellow);
+  background: #17140a;
+}
+
+.sp-cap.decide .sp-cap-step {
+  color: var(--sp-yellow);
+}
+
+.sp-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-ctrl button {
+  height: 38px;
+  min-width: 38px;
+  border: 0;
+  border-radius: 19px;
+  background: var(--sp-panel);
+  color: var(--sp-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  font: 700 14px/1 'Barlow Condensed', system-ui, sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.sp-ctrl button:hover {
+  background: var(--sp-panel-hover);
+}
+
+.sp-ctrl button:focus-visible,
+.sp-track:focus-visible {
+  outline: 2px solid var(--sp-yellow);
+  outline-offset: 2px;
+}
+
+.sp-ctrl .sp-play {
+  background: var(--sp-ink);
+  color: #0c1219;
+}
+
+.sp-ctrl .sp-play.go {
+  background: var(--sp-yellow);
+  color: #111;
+  padding: 0 14px;
+}
+
+.sp-ctrl button[aria-pressed='true'] {
+  background: var(--sp-orange);
+  color: #111;
+}
+
+.sp-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: var(--sp-panel);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* A taller invisible hit area, so the bar is easy to tap. */
+.sp-track::before {
+  content: '';
+  position: absolute;
+  inset: -12px 0;
+}
+
+.sp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--sp-orange);
+  border-radius: 3px;
+}
+
+.sp-mark {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 14px;
+  margin-left: -1.5px;
+  background: var(--sp-yellow);
+  border-radius: 1px;
+}
+
+.sp-time {
+  font: 600 13px/1 Barlow, system-ui, sans-serif;
+  color: var(--sp-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: right;
+}
