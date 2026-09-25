@@ -1,0 +1,25 @@
+---
+// The list of test scenes, one per level of each topic. Not part of the site.
+import Test from '../../layouts/Test.astro';
+import { scenes } from '../../scenes';
+---
+
+<Test title="Padel scenes · test">
+  <main>
+    <h1>Test scenes</h1>
+    <ul>
+      {Object.entries(scenes).map(([name, scene]) => <li><a href={`/test/${name}`}>{scene.title}</a> <small>{name}</small></li>)}
+    </ul>
+  </main>
+</Test>
+
+<style>
+  main {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+  small {
+    color: #8391a0;
+  }
+</style>

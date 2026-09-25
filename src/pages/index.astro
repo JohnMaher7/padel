@@ -1,25 +1,145 @@
 ---
-// Stand-in home page until the site skeleton (milestone 4): a list of test scenes.
-import Test from '../layouts/Test.astro';
-import { scenes } from '../scenes';
+import CourtMap from '../components/CourtMap.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Base from '../layouts/Base.astro';
+import { getTopics } from '../lib/topics';
+
+const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situation');
 ---
 
-<Test title="Padel scenes · test">
-  <main>
-    <h1>Test scenes</h1>
-    <ul>
-      {Object.entries(scenes).map(([name, scene]) => <li><a href={`/test/${name}`}>{scene.title}</a> <small>{name}</small></li>)}
-    </ul>
-  </main>
-</Test>
+<Base>
+  <div class="home">
+    <SiteHeader />
+    <main>
+      <section class="intro">
+        <h1>Padel situations, played&nbsp;out.</h1>
+        <p>
+          Pick a moment from a match. A short animation shows the right play at your level, and stops at the moment you have to decide.
+        </p>
+      </section>
+
+      <div class="map-slot">
+        <CourtMap topics={situations} />
+      </div>
+
+      <section class="list" id="situations" aria-labelledby="situations-h">
+        <h2 id="situations-h">Situations</h2>
+        {
+          situations.length ? (
+            <ul>
+              {situations.map((t) => (
+                <li>
+                  <a href={t.url}>
+                    <span class="name">{t.entry.data.title}</span>
+                    <span class="sum">{t.entry.data.summary}</span>
+                  </a>
+                  {t.entry.data.draft && <span class="draft">Draft</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="empty">The first situations are being checked. They'll appear here, and on the court, once they're ready.</p>
+          )
+        }
+      </section>
+    </main>
+    <SiteFooter />
+  </div>
+</Base>
 
 <style>
-  main {
-    max-width: 520px;
+  .home {
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 24px 16px;
+    padding: 0 var(--gutter);
   }
-  small {
-    color: #8391a0;
+  main {
+    display: grid;
+    gap: 32px;
+    padding: 24px 0 56px;
+  }
+  h1 {
+    font: 700 clamp(50px, 13.5vw, 96px) / 0.92 var(--display);
+    letter-spacing: -0.01em;
+    max-width: 8ch;
+  }
+  .intro p {
+    margin-top: 18px;
+    max-width: 27em;
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  h2 {
+    font: 700 32px/1 var(--display);
+    margin-bottom: 8px;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  li {
+    position: relative;
+    border-top: 1px solid var(--rule);
+  }
+  li:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+  li a {
+    display: grid;
+    gap: 4px;
+    padding: 16px 0 18px;
+    text-decoration: none;
+  }
+  .name {
+    font: 700 28px/1.05 var(--display);
+  }
+  li a:hover .name {
+    color: var(--kit-ink);
+  }
+  .sum {
+    color: var(--ink-soft);
+    font-size: 17px;
+    line-height: 1.45;
+  }
+  .draft {
+    position: absolute;
+    top: 18px;
+    right: 0;
+    padding: 3px 7px 2px;
+    background: var(--decide);
+    color: #3d3300;
+    font: 700 14px/1.2 var(--display);
+    border-radius: 2px;
+  }
+  .empty {
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-soft);
+    max-width: 30em;
+  }
+
+  @media (min-width: 900px) {
+    .home {
+      padding: 0 clamp(24px, 4vw, 56px);
+    }
+    main {
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+      grid-template-areas: 'intro map' 'list map';
+      grid-template-rows: auto 1fr;
+      column-gap: clamp(40px, 6vw, 96px);
+      row-gap: 48px;
+      padding-top: 56px;
+    }
+    .intro {
+      grid-area: intro;
+    }
+    .map-slot {
+      grid-area: map;
+    }
+    .list {
+      grid-area: list;
+    }
   }
 </style>

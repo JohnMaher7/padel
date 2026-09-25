@@ -1,0 +1,44 @@
+---
+// The shell of every page on the site. Pages add the header and footer
+// themselves, because a topic page on a laptop puts them in its reading column.
+import { SITE } from '../site';
+import '../styles/site.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+const { title, description = SITE.description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title ? `${title} | ${SITE.name}` : SITE.name}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d1a29" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@600;700&display=swap"
+    />
+    <script is:inline>
+      // The reader's level (Beginner or Advanced) is remembered across topics.
+      // It's set before the page draws, so the right tab shows without a flicker.
+      try {
+        var level = location.hash === '#advanced' || location.hash === '#beginner' ? location.hash.slice(1) : localStorage.getItem('level');
+        document.documentElement.dataset.level = level === 'advanced' ? 'advanced' : 'beginner';
+      } catch (e) {
+        document.documentElement.dataset.level = 'beginner';
+      }
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

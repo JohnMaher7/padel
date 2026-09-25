@@ -1,0 +1,17 @@
+---
+// The logo glyph: a padel court from above. 10 m × 20 m, service lines 6.95 m
+// from the net, and the centre line only between them.
+interface Props {
+  size?: number;
+}
+const { size = 28 } = Astro.props;
+const s = 26 / 20; // glyph units per metre
+const service = [1 + 3.05 * s, 1 + 16.95 * s];
+---
+
+<svg class="court-mark" viewBox="0 0 16 28" width={(size * 16) / 28} height={size} aria-hidden="true">
+  <rect x="1" y="1" width="14" height="26" rx="1.2" fill="#2663a4"></rect>
+  <path d={`M1 ${service[0]}H15M1 ${service[1]}H15M8 ${service[0]}V${service[1]}`} stroke="#f4f7fa" stroke-width="1" fill="none"></path>
+  <path d="M0.2 14H15.8" stroke="#f4f7fa" stroke-width="1.8"></path>
+  <rect x="1" y="1" width="14" height="26" rx="1.2" fill="none" stroke="#bfe9ff" stroke-width="0.9" opacity="0.8"></rect>
+</svg>

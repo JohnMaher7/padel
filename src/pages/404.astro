@@ -1,0 +1,41 @@
+---
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found">
+  <div class="page">
+    <SiteHeader />
+    <main>
+      <h1>Out.</h1>
+      <p>That page went over the glass. It may have moved, or the link has a typo.</p>
+      <p><a href="/#situations">See all the situations</a></p>
+    </main>
+    <SiteFooter />
+  </div>
+</Base>
+
+<style>
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+  main {
+    padding: 64px 0 96px;
+  }
+  h1 {
+    font: 700 clamp(72px, 20vw, 140px) / 0.9 var(--display);
+  }
+  p {
+    margin-top: 18px;
+    max-width: 26em;
+    font-size: 20px;
+  }
+  @media (min-width: 900px) {
+    .page {
+      padding: 0 clamp(24px, 4vw, 56px);
+    }
+  }
+</style>

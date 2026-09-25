@@ -18,6 +18,15 @@ A library of padel tactics and shots, taught through animated SVG scenes. It's w
 - **Content sourcing**: Opus researches coaching advice online. Good advice can be reused freely, but it's always reworded in our own words and nobody's animation is copied. The owner checks each topic before it goes live.
 - **Draft flag**: each topic has `draft: true | false`. Drafts render locally only; the owner flips the flag after checking.
 
+### Platform: a website for phone and laptop (chosen 2026-09-25)
+
+The owner weighed three options at the start of milestone 4 and chose a website that works on both phone and laptop.
+
+- **Designed for the phone first.** Most visitors will be on a phone, at the club or just before a match. The laptop gets its own layout rather than a stretched phone column: the court stays in view on the right while you read on the left.
+- **Why a website:** a tactics library is found through search, and Google can index a web page but can't see inside an app. A link shared in a club WhatsApp group opens straight away, with nothing to install. There's one codebase, and a `git push` puts it live.
+- **Not chosen: a phone-only site.** It saves very little work, and on a laptop it would look unfinished. The owner also reviews every topic on a laptop.
+- **Not chosen, for now: an app.** It would mean two app stores, a review before every content fix, and probably rebuilding the engine. Revisit only if we need something only an app gives, such as push notifications or offline use at the club. Even then, start by making the site installable, or by wrapping it, rather than rewriting it.
+
 ## Animations
 
 - **Top-down, vertical court** that fits a phone held upright.
@@ -57,6 +66,22 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 - At contact the racket points at the ball, whichever way the player faces, so every hit visibly connects.
 - Scenes live in `src/scenes/<topic>.<level>.ts` and are listed in `src/scenes/index.ts`. Each one gets a test page at `/test/<topic>.<level>`, and `?t=4.1` freezes it at a moment. `npm run scene` prints every hit and bounce the engine worked out, where each hitter stands, and any problems.
 
+### Site structure (settled in milestone 4, 2026-09-25)
+
+- **Words live in Markdown, named like the scenes.** For each topic:
+  - `src/content/topics/<topic>.md` holds the general advice.
+  - `src/content/plays/<topic>.<level>.md` holds each level's play.
+  - `src/scenes/<topic>.<level>.ts` holds each level's animation.
+
+  `src/lib/topics.ts` checks that they line up, so a missing play or scene stops the build and says which file to add.
+- **URLs**: situations live at `/situations/<topic>`. Shots will live at `/shots/<topic>` once they're written. Until then, a play lists its shots by name without a link.
+- **Drafts** are built only by `npm run dev`, and each carries a yellow note saying how to publish it. `npm run build` leaves them out entirely, so a draft can't reach the live site.
+- **The level remembers itself.** The reader's choice of Beginner or Advanced is kept in their browser and applies on every topic. `#advanced` on a link opens that tab.
+- **The steps under each animation are its captions**, taken from the scene data rather than written twice. The list follows the animation, and tapping a step plays from there. The list is also the text version of the animation.
+- **Home page**: a map of our half of the court, with each situation pinned where it starts (`spot` in the topic's Markdown), beside a plain list of the situations.
+- **Site look**: the court itself. Text sits on "line white" paper, and animations sit on blue turf. The Beginner/Advanced switch is drawn as the two service boxes. Orange only ever means your team, and yellow only ever means the decision. Type is Barlow Condensed for headings and Barlow for text, as in the scene player. Dark mode follows the phone's setting.
+- **Working name**: "Padel tactics", set in one place (`src/site.ts`) until the name is chosen in milestone 7.
+
 ## Shot pages at launch
 
 Written step-by-step technique + embedded YouTube coach clips, set to start at the relevant moment. Side-view animated technique figures come later, once the court animations are polished.
@@ -75,7 +100,7 @@ Build **"Opponents lob you"** fully end to end first, then the rest:
 | 1 | Design settled | done 2026-09-24 |
 | 2 | Visual style: 3 options of one scene (including player figures); owner picks | done 2026-09-24 (chose A, "Broadcast") |
 | 3 | Animation engine + scene data format, with "Opponents lob you" playing on a test page | done 2026-09-25 |
-| 4 | Astro site skeleton with the first topic page and tabs | |
+| 4 | Astro site skeleton with the first topic page and tabs | done 2026-09-25 (phone + laptop site; first topic published) |
 | 5 | Deploy to Cloudflare (`*.pages.dev`) | |
 | 6 | Content pipeline: Opus researches → drafts text + scene data → preview → owner checks | |
 | 7 | Launch set of 10 topics, then choose a name and domain | |
@@ -84,11 +109,11 @@ The engine (3) comes before the site (4) on purpose: the animation is the riskie
 
 ## Open issues
 
-- **"Opponents lob you" has no Advanced scene yet.** Milestone 4's Advanced tab needs one. Its coaching goes through the normal content check: researched, reworded, and checked by the owner.
-- **The owner hasn't yet watched the milestone 3 version of the beginner scene.** The coaching is unchanged, but the timings moved slightly now that physics sets them: the lob is hit at 1.35 s and the decision stop is at 1.95 s.
+- **Short laptop screens lose the fixed court.** On a laptop window under 740 px tall, the court panel scrolls with the page instead of staying in view, because the whole player wouldn't fit.
 
 ### Resolved
 
+- **"Opponents lob you" signed off.** Milestone 4 added its Advanced play: the same lob as the Beginner scene, taken in the air with a bandeja from just in front of the service line to keep the net. The coaching was researched and reworded (The Padel School, padel-rules.com, Padel Point, Minter Dial). The owner set `draft: false` on 2026-09-25.
 - **The ball swerved at bounces.** Spotted by the owner in the milestone 2 prototype on 2026-09-24 and fixed in milestone 3 on 2026-09-25. At 3.6 s the lob left a bounce on a heading 17° off the one it came in on, so it looked as if it had deflected off the players. *Cause:* the scene data placed every bounce by hand. *Fix:* scenes now describe only the shots, and the engine works out the bounces. A test checks every bounce in every scene: a floor bounce keeps the heading, and a wall reverses only the motion into it.
 
 ## Deferred (decided: not now)

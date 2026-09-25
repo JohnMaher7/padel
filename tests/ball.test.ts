@@ -54,14 +54,15 @@ describe('bounces, in every scene', () => {
       }
     });
 
-    it(`${name}: the glass reverses only the motion into it`, () => {
+    it(`${name}: a wall reverses only the motion into it`, () => {
       for (const e of path.events) {
         if (e.kind !== 'glass' && e.kind !== 'mesh') continue;
         const [n, along] = e.wall === 'left' || e.wall === 'right' ? [0, 1] : [1, 0];
         const [v0, v1] = [before(path, e.t), after(path, e.t)];
         expect(Math.sign(v1[n]!)).toBe(-Math.sign(v0[n]!));
         expect(Math.sign(v1[along]!)).toBe(Math.sign(v0[along]!));
-        expect(Math.abs(v1[n]!)).toBeCloseTo(Math.abs(v0[n]!) * PHYSICS.glass.normal, 9);
+        // Mesh deadens the ball more than glass does.
+        expect(Math.abs(v1[n]!)).toBeCloseTo(Math.abs(v0[n]!) * PHYSICS[e.kind].normal, 9);
       }
     });
 

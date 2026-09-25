@@ -1,0 +1,153 @@
+/*
+ * The site's look, taken from the court itself: text sits on "line white"
+ * paper, animations sit on the turf, and every colour means one thing.
+ *   turf    the court; where you watch
+ *   kit     our team's shirts: you and your partner
+ *   decide  the decision moment, and nothing else
+ * The scene player keeps its own always-dark TV look (engine/render/broadcast.css).
+ */
+
+:root {
+  --paper: #f5f7f9;
+  --ink: #102338;
+  --ink-soft: #4a5d72;
+  --rule: #d3dce5;
+  --turf: #2663a4;
+  --turf-band: #2a6aae;
+  --turf-deep: #13243a;
+  --line: #f4f7fa;
+  --kit: #ff7a2f;
+  --kit-ink: #b0460b;
+  --decide: #ffd400;
+  --focus: #1d6fd6;
+
+  --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --text: Barlow, system-ui, sans-serif;
+  --gutter: 16px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0d1a29;
+    --ink: #e8eef4;
+    --ink-soft: #9db0c3;
+    --rule: #22364b;
+    --kit-ink: #ff9d63;
+    --focus: #8cc2ff;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 18px/1.55 var(--text);
+  font-kerning: normal;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  text-wrap: balance;
+}
+
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--kit);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--kit-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Things that belong to one level (a tab's text, its animation) show only when that level is chosen. */
+html[data-level='beginner'] [data-only='advanced'],
+html[data-level='advanced'] [data-only='beginner'] {
+  display: none;
+}
+
+/* Written content from Markdown: advice lists, paragraphs, small headings. */
+.prose {
+  max-width: 36em;
+}
+
+.prose > * + * {
+  margin-top: 0.8em;
+}
+
+.prose h3 {
+  margin-top: 1.6em;
+  font: 600 20px/1.25 var(--text);
+}
+
+.prose ul {
+  padding: 0;
+  list-style: none;
+}
+
+.prose li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.prose li + li {
+  margin-top: 0.7em;
+}
+
+/* A short court line, in turf blue, as the bullet. */
+.prose li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 14px;
+  height: 4px;
+  background: var(--turf);
+  border-radius: 1px;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

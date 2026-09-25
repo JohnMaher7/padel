@@ -1,0 +1,458 @@
+---
+// A situation page: general advice for every level, then a Beginner and an
+// Advanced play, each with its own animation.
+//
+// On a phone everything is one column: advice, the court, then the play.
+// On a laptop the court stays in view on the right while you read on the left.
+import { render } from 'astro:content';
+import SiteFooter from '../../components/SiteFooter.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import Base from '../../layouts/Base.astro';
+import { stepsOf } from '../../lib/steps';
+import { getTopics, LEVEL_INFO, LEVELS, type Topic } from '../../lib/topics';
+
+export async function getStaticPaths() {
+  const topics = await getTopics();
+  return topics.filter((t) => t.entry.data.kind === 'situation').map((topic) => ({ params: { slug: topic.entry.id }, props: { topic } }));
+}
+
+const { topic } = Astro.props as { topic: Topic };
+const { title, summary, draft } = topic.entry.data;
+const { Content: Advice } = await render(topic.entry);
+const plays = await Promise.all(
+  LEVELS.map(async (level) => {
+    const play = topic.plays[level];
+    const { Content } = await render(play.entry);
+    return { ...play, Content, steps: stepsOf(play.scene) };
+  }),
+);
+---
+
+<Base title={title} description={summary}>
+  <div class="topic">
+    <div class="read">
+      <SiteHeader />
+      {
+        draft && (
+          <p class="draft">
+            <strong>Draft.</strong> Only you can see this, while you run the site on your own computer. Once you've checked it,
+            set <code>draft: false</code> in <code>src/content/topics/{topic.entry.id}.md</code>.
+          </p>
+        )
+      }
+      <header class="topic-head">
+        <p class="crumb"><a href="/#situations">Situations</a></p>
+        <h1>{title}</h1>
+        <p class="summary">{summary}</p>
+      </header>
+      <section class="advice" aria-labelledby="advice-h">
+        <h2 id="advice-h">At any level</h2>
+        <div class="prose"><Advice /></div>
+      </section>
+    </div>
+
+    <section class="watch" aria-label="Animation of the play">
+      <div class="boxes" role="tablist" aria-label="Your level">
+        {
+          LEVELS.map((level) => (
+            <button
+              type="button"
+              role="tab"
+              id={`tab-${level}`}
+              data-level-tab={level}
+              aria-controls={`play-${level} stage-${level}`}
+              aria-selected={level === 'beginner' ? 'true' : 'false'}
+              tabindex={level === 'beginner' ? 0 : -1}
+            >
+              {LEVEL_INFO[level].name}
+            </button>
+          ))
+        }
+      </div>
+      {
+        plays.map((p) => (
+          <div class="stage" id={`stage-${p.level}`} data-only={p.level}>
+            <p class="aim">{LEVEL_INFO[p.level].aim}</p>
+            <div data-stage={p.level} data-scene={p.sceneName} />
+          </div>
+        ))
+      }
+    </section>
+
+    <div class="plays">
+      {
+        plays.map((p) => (
+          <section class="play" id={`play-${p.level}`} role="tabpanel" aria-labelledby={`tab-${p.level}`} data-only={p.level}>
+            <p class="level">{LEVEL_INFO[p.level].name}</p>
+            <h2>{p.entry.data.play}</h2>
+
+            <h3 class="steps-h">Step by step</h3>
+            <ol class="steps" data-steps={p.level}>
+              {p.steps.map((s) =>
+                s.kind === 'decision' ? (
+                  <li>
+                    <button type="button" class="step decision" data-key="decision" data-t={s.t}>
+                      <span class="n" aria-hidden="true" />
+                      <span>
+                        <strong>Your decision.</strong> {s.text}
+                      </span>
+                    </button>
+                  </li>
+                ) : (
+                  <li>
+                    <button type="button" class="step" data-key={s.n - 1} data-t={s.t}>
+                      <span class="n">{s.n}</span>
+                      <span>{s.text}</span>
+                    </button>
+                  </li>
+                ),
+              )}
+            </ol>
+            <p class="steps-note">Pick a step to watch it again.</p>
+
+            <div class="prose why">
+              <p.Content />
+            </div>
+
+            {p.entry.data.shots.length > 0 && (
+              <p class="shots">
+                {/* These become links once the shot pages exist. */}
+                Shots in this play: {p.entry.data.shots.join(', ')}
+              </p>
+            )}
+          </section>
+        ))
+      }
+    </div>
+
+    <div class="foot"><SiteFooter /></div>
+  </div>
+</Base>
+
+<script>
+  import { playScene } from '../../engine';
+  import { captionAt } from '../../engine/sample';
+  import { scenes } from '../../scenes';
+
+  type Level = 'beginner' | 'advanced';
+  const html = document.documentElement;
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-level-tab]')];
+  const players = new Map<Level, ReturnType<typeof playScene>>();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  for (const stage of document.querySelectorAll<HTMLElement>('[data-stage]')) {
+    const level = stage.dataset.stage as Level;
+    const scene = scenes[stage.dataset.scene!]!;
+    const player = playScene(stage, scene);
+    players.set(level, player);
+
+    // The step list follows the animation, and tapping a step plays from there.
+    const steps = [...document.querySelectorAll<HTMLButtonElement>(`[data-steps="${level}"] .step`)];
+    player.playback.on((s) => {
+      const current = s.atDecision ? 'decision' : String(captionAt(scene, s.t).index);
+      for (const step of steps) {
+        if (step.dataset.key === current) step.setAttribute('aria-current', 'step');
+        else step.removeAttribute('aria-current');
+      }
+    });
+    for (const step of steps) {
+      step.addEventListener('click', () => {
+        const t = Number(step.dataset.t);
+        // The decision row replays the moment just before the stop; any other row starts just after its caption appears.
+        player.playback.seek(step.dataset.key === 'decision' ? t - 0.4 : t === 0 ? 0 : t + 0.01);
+        player.playback.play();
+        stage.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+    }
+  }
+
+  function select(level: Level, { remember = false, focus = false } = {}) {
+    html.dataset.level = level;
+    for (const tab of tabs) {
+      const on = tab.dataset.levelTab === level;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      if (on && focus) tab.focus();
+    }
+    players.forEach((p, l) => l !== level && p.playback.pause());
+    if (!remember) return;
+    try {
+      localStorage.setItem('level', level);
+    } catch {
+      // Private browsing can block storage; the choice then lasts for this page only.
+    }
+    history.replaceState(null, '', `#${level}`);
+  }
+
+  select(html.dataset.level === 'advanced' ? 'advanced' : 'beginner');
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#beginner' || location.hash === '#advanced') select(location.hash.slice(1) as Level, { remember: true });
+  });
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab.dataset.levelTab as Level, { remember: true }));
+    tab.addEventListener('keydown', (e) => {
+      const to = { ArrowLeft: i - 1, ArrowRight: i + 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      const next = tabs[(to + tabs.length) % tabs.length]!;
+      select(next.dataset.levelTab as Level, { remember: true, focus: true });
+    });
+  });
+</script>
+
+<style>
+  .topic {
+    /* Room the court panel needs besides the court itself: tabs, the level's aim, caption bar, controls. */
+    --watch-chrome: 270px;
+    --court-w: clamp(250px, calc((100dvh - var(--watch-chrome)) * 118 / 218), 440px);
+  }
+
+  .read,
+  .play,
+  .foot {
+    padding-inline: var(--gutter);
+  }
+
+  /* ---- Title and general advice ---- */
+  .draft {
+    margin: 4px 0 8px;
+    padding: 12px 14px;
+    background: #fff4b8;
+    color: #3d3300;
+    border-left: 5px solid var(--decide);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .draft code {
+    font-size: 14px;
+  }
+  .topic-head {
+    padding: 28px 0 8px;
+  }
+  .crumb {
+    font: 600 16px/1 var(--text);
+    margin-bottom: 14px;
+  }
+  .crumb a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .crumb a::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+  .crumb a:hover {
+    color: var(--kit-ink);
+  }
+  h1 {
+    font: 700 clamp(50px, 14vw, 84px) / 0.92 var(--display);
+    letter-spacing: -0.01em;
+    max-width: 9ch;
+  }
+  .summary {
+    margin-top: 16px;
+    max-width: 26em;
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .advice {
+    padding: 36px 0 40px;
+  }
+  .advice h2,
+  .play h2 {
+    font: 700 32px/1.02 var(--display);
+    margin-bottom: 18px;
+  }
+
+  /* ---- The court panel ---- */
+  .watch {
+    --sp-chrome: var(--watch-chrome);
+    background: repeating-linear-gradient(180deg, var(--turf) 0 56px, var(--turf-band) 56px 112px);
+    color: var(--line);
+    padding: 20px var(--gutter) 24px;
+  }
+  /* The level switch is drawn as the two service boxes, split by the centre line. */
+  .boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    border: 3px solid var(--line);
+    border-radius: 2px;
+  }
+  .boxes button {
+    height: 50px;
+    border: 0;
+    background: transparent;
+    color: var(--line);
+    font: 700 21px/1 var(--display);
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .boxes button + button {
+    border-left: 3px solid var(--line);
+  }
+  .boxes button:hover {
+    background: rgb(255 255 255 / 0.1);
+  }
+  .boxes button:focus-visible {
+    outline: 3px solid var(--decide);
+    outline-offset: -6px;
+  }
+  /* Styled from the page's level rather than aria-selected, so the right box is filled before the script runs. */
+  :global(html[data-level='beginner']) .boxes [data-level-tab='beginner'],
+  :global(html[data-level='advanced']) .boxes [data-level-tab='advanced'] {
+    background: var(--line);
+    color: #102338;
+  }
+  .aim {
+    margin: 12px auto 16px;
+    max-width: 440px;
+    text-align: center;
+    font-size: 16px;
+    line-height: 1.35;
+    color: rgb(244 247 250 / 0.9);
+  }
+
+  /* ---- The play ---- */
+  .play {
+    padding-top: 32px;
+    padding-bottom: 40px;
+  }
+  .level {
+    font: 700 19px/1 var(--display);
+    color: var(--kit-ink);
+    margin-bottom: 8px;
+  }
+  .steps-h,
+  .play :global(.prose h3) {
+    font: 600 20px/1.25 var(--text);
+  }
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+    max-width: 36em;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px 10px 10px;
+    border: 0;
+    border-left: 4px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 17px;
+    line-height: 1.45;
+    text-align: left;
+    cursor: pointer;
+  }
+  .step:hover {
+    background: color-mix(in srgb, var(--turf) 7%, transparent);
+  }
+  .step[aria-current] {
+    border-left-color: var(--kit);
+    background: color-mix(in srgb, var(--kit) 11%, transparent);
+  }
+  .n {
+    font: 700 21px/1.15 var(--display);
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .step[aria-current] .n {
+    color: var(--kit-ink);
+  }
+  /* The decision row carries the progress bar's yellow mark. */
+  .decision .n::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 20px;
+    margin: 2px auto 0;
+    background: var(--decide);
+    border-radius: 1px;
+  }
+  .decision[aria-current] {
+    border-left-color: var(--decide);
+    background: color-mix(in srgb, var(--decide) 22%, transparent);
+  }
+  .decision strong {
+    font-weight: 600;
+  }
+  .steps-note {
+    margin: 8px 0 0 14px;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .why {
+    margin-top: 32px;
+  }
+  .shots {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-size: 16px;
+    color: var(--ink-soft);
+  }
+
+  /* ---- Laptop: read on the left, watch on the right ---- */
+  @media (min-width: 900px) {
+    .topic {
+      --gutter: 0px;
+      padding-left: clamp(24px, 4vw, 56px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) calc(var(--court-w) + 72px);
+      grid-template-areas: 'read watch' 'play watch' 'foot watch';
+      grid-template-rows: auto 1fr auto;
+      column-gap: clamp(32px, 5vw, 80px);
+    }
+    .read,
+    .plays,
+    .foot {
+      width: 100%;
+      max-width: 760px;
+      justify-self: center;
+    }
+    .read {
+      grid-area: read;
+    }
+    .plays {
+      grid-area: play;
+    }
+    .foot {
+      grid-area: foot;
+    }
+    .watch {
+      grid-area: watch;
+      align-self: start;
+      min-height: 100dvh;
+      padding: 28px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .topic-head {
+      padding-top: 48px;
+    }
+  }
+
+  /* Keep the court in view while you read, when the window is tall enough to hold all of it. */
+  @media (min-width: 900px) and (min-height: 740px) {
+    .watch {
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+    }
+  }
+</style>
