@@ -3,6 +3,10 @@
 // page that doesn't exist. "name" is the Worker's name in the Cloudflare
 // dashboard. Cloudflare's own builds swap in the dashboard name anyway, but a
 // deploy from the laptop uses this one, so keep the two the same.
+//
+// "previews" switches on the preview address Cloudflare builds for every
+// branch other than main. It's empty because a preview needs no settings of
+// its own: it serves the same files, and "assets" stays at the top level.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "padel",
@@ -10,5 +14,6 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page"
-  }
+  },
+  "previews": {}
 }
