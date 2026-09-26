@@ -28,8 +28,13 @@ export interface Topic {
   plays: Record<Level, Play>;
 }
 
-/** Drafts show while you work (`npm run dev`), never in a build for the live site. */
-const showDrafts = import.meta.env.DEV;
+/**
+ * Drafts show while you work (`npm run dev`) and on the preview address Cloudflare builds for any
+ * branch other than `main`, so a draft can be checked on a phone. Never in the build for the live
+ * site. Cloudflare's builds set WORKERS_CI_BRANCH; a build without it counts as live.
+ */
+const branch = process.env.WORKERS_CI_BRANCH;
+export const showDrafts = import.meta.env.DEV || (!!branch && branch !== 'main');
 
 export async function getTopics(): Promise<Topic[]> {
   const [topics, plays] = await Promise.all([getCollection('topics'), getCollection('plays')]);
@@ -70,7 +75,7 @@ export async function getTopics(): Promise<Topic[]> {
   return result.sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
 }
 
-/** The scenes that get a test page: every scene while you work, but only published topics' in a build for the live site. */
+/** The scenes that get a test page: every scene wherever drafts show, but only published topics' in the live site. */
 export async function testSceneNames(): Promise<string[]> {
   if (showDrafts) return Object.keys(scenes);
   const topics = await getTopics();

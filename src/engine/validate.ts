@@ -31,6 +31,20 @@ export function validate({ scene, ball }: Compiled): Problem[] {
     if (!during(c.t)) add(c.t, `Caption ${i + 1} starts outside the scene.`);
     if (i > 0 && c.t <= captions[i - 1]!.t) add(c.t, `Caption ${i + 1} starts before the one above it ends.`);
   });
+  // A caption is a headline, and it needs time to be read. The animation never waits for it (only the
+  // decision moment stops play), so a caption that doesn't fit is cut, not given a pause. The last
+  // caption stays on screen after the end, so it always has time.
+  captions.slice(0, -1).forEach((c, i) => {
+    const words = c.text.trim().split(/\s+/).length;
+    const needs = LIMITS.readBase + LIMITS.readPerWord * words;
+    const has = captions[i + 1]!.t - c.t;
+    if (has < needs - 1e-9)
+      add(
+        c.t,
+        `Caption ${i + 1} ("${c.text}") is on screen for ${m(has)} s, but ${words} words need ${m(needs)} s. ` +
+          `Shorten it, merge it with a neighbour, or start the next caption at ${m(c.t + needs)} s or later. Put the explanation in its detail.`,
+      );
+  });
 
   // ---- Players ----------------------------------------------------------------
   for (const id of PLAYER_IDS) {
@@ -100,6 +114,25 @@ export function validate({ scene, ball }: Compiled): Problem[] {
         add(t, `The ball bounces twice (at ${m(floors[0]!.t)} s and ${m(floors[1]!.t)} s) before ${by} hits it. Hit it sooner.`);
     }
   });
+
+  // ---- The serve ------------------------------------------------------------------
+  const serve = shots[0];
+  if (serve.serve) {
+    const [x, y, h] = serve.from;
+    const us = teamOf(serve.by) === 'us';
+    const line = us ? COURT.net + COURT.service : COURT.net - COURT.service;
+    if (us ? y < line : y > line)
+      add(0, `${serve.by} serves from y ${m(y)}, in front of the service line (y ${m(line)}). Serve from behind it.`);
+    if (h > LIMITS.serveHigh) add(0, `${serve.by} serves from ${m(h)} m high. A serve is hit at or below the waist (${LIMITS.serveHigh} m).`);
+    const [lx, ly] = serve.to;
+    const inBox = (us ? ly > COURT.net - COURT.service : ly < COURT.net + COURT.service) && (x < COURT.width / 2 ? lx > COURT.width / 2 : lx < COURT.width / 2);
+    if (!inBox) add(0, `The serve lands at (${m(lx)}, ${m(ly)}), outside the service box diagonally across from ${serve.by}.`);
+    const reply = shots[1];
+    if (reply && !ball.events.some((e) => e.kind === 'floor' && e.t < reply.t))
+      add(reply.t, `${reply.by} hits the serve before it bounces. The return must let it bounce.`);
+    const firstWall = ball.events.find((e) => (e.kind === 'glass' || e.kind === 'mesh') && e.t > serve.t && (!reply || e.t < reply.t));
+    if (firstWall?.kind === 'mesh') add(firstWall.t, `The serve bounces into the mesh before the glass, so it's out. Aim it deeper or more central.`);
+  }
 
   for (const e of ball.events) {
     if ((e.kind === 'glass' || e.kind === 'mesh') && e.at[2] > COURT.wallHeight)

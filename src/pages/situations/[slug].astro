@@ -35,8 +35,8 @@ const plays = await Promise.all(
       {
         draft && (
           <p class="draft">
-            <strong>Draft.</strong> Only you can see this, while you run the site on your own computer. Once you've checked it,
-            set <code>draft: false</code> in <code>src/content/topics/{topic.entry.id}.md</code>.
+            <strong>Draft.</strong> It shows on your own computer and on a branch's preview address, never on the live site. Once
+            you've checked it, set <code>draft: false</code> in <code>src/content/topics/{topic.entry.id}.md</code>.
           </p>
         )
       }
@@ -102,7 +102,10 @@ const plays = await Promise.all(
                   <li>
                     <button type="button" class="step" data-key={s.n - 1} data-t={s.t}>
                       <span class="n">{s.n}</span>
-                      <span>{s.text}</span>
+                      <span>
+                        {s.text}
+                        {s.detail && <span class="detail">{s.detail}</span>}
+                      </span>
                     </button>
                   </li>
                 ),
@@ -372,6 +375,13 @@ const plays = await Promise.all(
   }
   .step[aria-current] .n {
     color: var(--kit-ink);
+  }
+  /* The caption is the headline; its detail explains it, for reading at your own pace. */
+  .detail {
+    display: block;
+    margin-top: 3px;
+    font-size: 16px;
+    color: var(--ink-soft);
   }
   /* The decision row carries the progress bar's yellow mark. */
   .decision .n::before {

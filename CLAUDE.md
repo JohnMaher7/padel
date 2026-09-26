@@ -15,5 +15,6 @@ The owner is learning to build with AI, and the learning pages are how that happ
 ## Conventions
 
 - Scenes are **sheet music**: typed data files played by the shared engine. Write scene data, never hand-made animated SVG files.
+- Write a new topic with the `new-topic` skill (`.claude/skills/new-topic/SKILL.md`): research notes, words, scenes, checks, then a preview for the owner.
 - Write a scene against `npm run scene -- <name> [from-to]`, which prints the hits and bounces the engine works out. A scene is done when `npm run build` passes **and** you've looked at every hit and bounce on `/test/<name>?t=<time>` at phone size. The rules can't tell whether a scene reads well.
 - Content can reuse good coaching advice but is always reworded in our own words; nobody's animation is copied.

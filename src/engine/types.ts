@@ -40,12 +40,22 @@ interface ShotBase {
 export type Shot = ShotBase & Flight & { from?: never };
 
 /** The first shot of a scene is the only one that says where the ball starts. */
-export type OpeningShot = ShotBase & Flight & { from: Vec3 };
+export type OpeningShot = ShotBase &
+  Flight & {
+    from: Vec3;
+    /** It's a serve: hit underarm from behind the service line, into the service box diagonally across. The validator checks it. */
+    serve?: boolean;
+  };
 
-/** A caption shows from its time until the next caption starts (the last one runs to the end). */
+/**
+ * A caption shows from its time until the next caption starts (the last one runs to the end).
+ * It's a headline, short enough to read while the action carries on; the validator checks it has the time.
+ */
 export interface Caption {
   t: number;
   text: string;
+  /** The fuller explanation. It shows in the step list under the animation, not in the caption bar. */
+  detail?: string;
 }
 
 export interface Scene {

@@ -37,12 +37,14 @@ export default {
   ],
 
   captions: [
-    { t: 0, text: "You're both at the net. They're stuck at the back." },
-    { t: 1.35, text: 'They lob it over your head.' },
-    { t: 1.95, text: 'Turn and run back. Your partner drops back with you.' },
-    { t: 3.7, text: 'Let it bounce and come off the back glass.' },
-    { t: 4.95, text: 'Lob it back, high and deep, over their heads.' },
-    { t: 6.0, text: 'While they chase it, move up together and take the net back.' },
+    { t: 0, text: "You're both at the net.", detail: "They're stuck at the back, so they lob it over your heads." },
+    {
+      t: 1.95,
+      text: 'Run back together. Let it bounce.',
+      detail: 'Turn and run back; your partner drops back with you, so there\'s no gap. Let it bounce and come off the back glass, where it slows down and drops to a comfortable height.',
+    },
+    { t: 4.2, text: 'Lob it back, high and deep.', detail: 'A high, deep lob sends them back to chase it.' },
+    { t: 6.2, text: 'Move up together. Take the net back.', detail: 'While they chase it, walk back up to the net side by side.' },
   ],
 
   decision: { t: 1.95, prompt: 'The lob is going over you. What do you do?' },

@@ -39,13 +39,14 @@ export default {
   ],
 
   captions: [
-    { t: 0, text: "You're both at the net. They're stuck at the back." },
-    { t: 1.35, text: 'They lob it over your head.' },
-    { t: 1.95, text: "It won't go deep. Turn side-on and shuffle back to meet it." },
-    { t: 3.0, text: 'Take it above your head with a bandeja, before the service line.' },
-    { t: 3.8, text: "Aim it deep. It isn't meant to win the point, just to keep you at the net." },
-    { t: 4.6, text: 'Step straight back in while they dig it out of the corner.' },
-    { t: 5.6, text: "Their reply is soft, and you're both at the net to finish it." },
+    { t: 0, text: "You're both at the net.", detail: "They're stuck at the back, so they lob it over your heads." },
+    {
+      t: 1.95,
+      text: 'Shuffle back. Take it with a bandeja.',
+      detail: "It won't go deep. Turn side-on, shuffle back, and take it above your head before the service line. Aim deep, not hard: a bandeja isn't meant to win the point, just to keep you at the net.",
+    },
+    { t: 4.2, text: 'Step straight back in.', detail: 'Move in while they dig it out of the corner, so your partner isn\'t left at the net alone.' },
+    { t: 5.7, text: 'Their reply is soft. Finish it.', detail: "You're both at the net again, so your partner can put it away." },
   ],
 
   decision: { t: 1.95, prompt: 'The lob is going over you. What do you do?' },

@@ -35,6 +35,7 @@ The owner raised this at the start of milestone 6: a home page that only says "p
 - **Every topic in a path shows where it sits**, e.g. "Start here · 5 of 6", with previous/next links and a link to step 1. That strip is what turns someone arriving from Google into a path follower.
 - **The home page leads with "New to padel? Start here"**, with the court map and the list below it as "or jump to a moment".
 - **Progress ticks:** a topic counts as watched once its animation reaches the end. The tick is kept in the browser, like the level choice, so no accounts are needed.
+- **Built in milestone 7**, once enough of the path is written to follow. A path with four missing steps would be a worse front door than the list.
 - A later **"Next level"** path picks up Both teams at the net, serving formations and the Advanced tabs.
 - **Positioning:** padel is won by where you stand, not how hard you hit. Most coaching on YouTube is technique in long videos. Ours is positioning, in 30-second scenes that stop and ask you to decide.
 
@@ -105,7 +106,7 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 
   `src/lib/topics.ts` checks that they line up, so a missing play or scene stops the build and says which file to add.
 - **URLs**: situations live at `/situations/<topic>`. Shots will live at `/shots/<topic>` once they're written. Until then, a play lists its shots by name without a link.
-- **Drafts** are built only by `npm run dev`, and each carries a yellow note saying how to publish it. `npm run build` leaves them out entirely, so a draft can't reach the live site. (The repo on GitHub is public, though, so anyone can read a draft's Markdown there.)
+- **Drafts** are built by `npm run dev` and, since milestone 6, by Cloudflare for any branch other than `main`, so the owner can check a draft on a phone at the branch's preview address. Each draft carries a yellow note saying how to publish it. The build for `main` leaves drafts out entirely, so a draft can't reach the live site. `src/lib/topics.ts` decides this from `WORKERS_CI_BRANCH`, which Cloudflare's builds set. A build without it counts as live. (The repo on GitHub is public, though, so anyone can read a draft's Markdown there.)
 - **The level remembers itself.** The reader's choice of Beginner or Advanced is kept in their browser and applies on every topic. `#advanced` on a link opens that tab.
 - **The steps under each animation are its captions**, taken from the scene data rather than written twice. The list follows the animation, and tapping a step plays from there. The list is also the text version of the animation.
 - **Home page**: a map of our half of the court, with each situation pinned where it starts (`spot` in the topic's Markdown), beside a plain list of the situations.
@@ -124,6 +125,21 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 - **Addresses have no trailing slash** (`/situations/opponents-lob-you`). Astro writes each page as a `.html` file, so Cloudflare serves that address directly, and `/situations/opponents-lob-you/` redirects to it. With the default `index.html` folders, every tap on a topic cost a redirect first.
 - **It costs €0.** Cloudflare's free plan allows unlimited visits to static files and 3,000 build minutes a month (a build takes a minute or two), and it allows commercial sites. A public GitHub repo is free. Not chosen: Vercel's free plan, which forbids commercial use, and GitHub Pages, which isn't meant for a site that makes money. The first real cost is the domain in milestone 7. Workers' paid plan ($5 a month) would only be needed for server code beyond the free allowance.
 - **When the domain arrives (milestone 7):** move the domain's DNS to Cloudflare, attach the domain to the Worker, delete the noindex rule from `public/_headers`, and turn off or redirect the `workers.dev` address.
+
+## Content pipeline (settled in milestone 6, 2026-09-26)
+
+The pipeline is a recipe Claude follows for every topic: `.claude/skills/new-topic/SKILL.md`, run as `/new-topic <slug>`. It has five steps:
+
+1. **Research.** At least four coaching sources, each one read in full. Notes go in `docs/research/<slug>.md`: sources with links, what they agree on and where it went on the page, and **where they differ and what we chose**. Advice goes in only if at least two sources give it, or one good source gives it and nothing contradicts it. Rules come from a federation.
+2. **Write the words**, as a draft, all in our own words.
+3. **Write the scenes shot by shot** against `npm run scene`.
+4. **Claude checks** every hit and bounce at phone size, and every claim against the research notes.
+5. **The owner checks** on the branch's preview address, on a phone, then sets `draft: false`. Merging to `main` puts it live.
+
+- **One branch per topic** (`topic/<slug>`), so a half-checked topic never blocks another one and `main` stays live-ready.
+- **Research notes live in the repo**, not in chat. The owner can check any claim on the page against its source, and a later edit knows why a choice was made.
+- **New in the scene format for serves:** an opening shot can say `serve: true`. The validator then checks it against the LTA rules: hit at or below the waist (1 m), from behind the service line, landing in the box diagonally across, not bouncing into the mesh before the glass, and returned only after it bounces. The ball waits at `from` until the shot's time, so a scene can show the positions for a second before the serve.
+- **Captions got a `detail`** (see Engine and scene format): the headline shows in the bar, and the headline with its detail shows in the step list.
 
 ## Shot pages at launch
 
@@ -145,7 +161,7 @@ Build **"Opponents lob you"** fully end to end first, then the rest:
 | 3 | Animation engine + scene data format, with "Opponents lob you" playing on a test page | done 2026-09-25 |
 | 4 | Astro site skeleton with the first topic page and tabs | done 2026-09-25 (phone + laptop site; first topic published) |
 | 5 | Deploy to Cloudflare (`*.workers.dev`; planned as `*.pages.dev`) | done 2026-09-26 (live at `padel.johnmaher0.workers.dev`) |
-| 6 | Content pipeline: Opus researches → drafts text + scene data → preview → owner checks | |
+| 6 | Content pipeline: Opus researches → drafts text + scene data → preview → owner checks | built 2026-09-26; first run, "Returning serve", waiting for the owner's check |
 | 7 | Launch set of 10 topics, then choose a name and domain | |
 
 The engine (3) comes before the site (4) on purpose: the animation is the riskiest and most important part, so it gets proven first.

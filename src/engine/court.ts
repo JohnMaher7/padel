@@ -51,4 +51,9 @@ export const LIMITS = {
   /** Players keep this far from the walls and the net. */
   wallGap: 0.2,
   netGap: 0.3,
+  /** A serve is hit at or below the waist. */
+  serveHigh: 1.0,
+  /** Reading time a caption needs on screen at 1× speed: a moment to notice it changed, then a quarter-second a word. */
+  readBase: 0.5,
+  readPerWord: 0.25,
 } as const;
