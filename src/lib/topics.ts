@@ -69,3 +69,10 @@ export async function getTopics(): Promise<Topic[]> {
   if (problems.length) throw new Error(`The topics don't line up:\n- ${problems.join('\n- ')}`);
   return result.sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
 }
+
+/** The scenes that get a test page: every scene while you work, but only published topics' in a build for the live site. */
+export async function testSceneNames(): Promise<string[]> {
+  if (showDrafts) return Object.keys(scenes);
+  const topics = await getTopics();
+  return topics.flatMap((topic) => LEVELS.map((level) => topic.plays[level].sceneName));
+}

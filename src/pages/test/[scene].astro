@@ -3,10 +3,11 @@
 // Add ?t=4.1 to freeze on a moment, or ?speed=0.5 to start at half speed.
 import Test from '../../layouts/Test.astro';
 import { ballPath } from '../../engine/ball';
+import { testSceneNames } from '../../lib/topics';
 import { scenes } from '../../scenes';
 
-export function getStaticPaths() {
-  return Object.keys(scenes).map((scene) => ({ params: { scene } }));
+export async function getStaticPaths() {
+  return (await testSceneNames()).map((scene) => ({ params: { scene } }));
 }
 
 const name = Astro.params.scene!;
