@@ -2,7 +2,7 @@
 title: Returning serve
 kind: situation
 summary: They're serving to you. Your return decides which team gets to the net first.
-draft: true
+draft: false
 spot: [7.1, 18.3]
 ---
 
