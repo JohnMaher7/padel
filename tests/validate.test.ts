@@ -4,6 +4,7 @@ import { compile } from '../src/engine/sample';
 import { formatProblems, validate } from '../src/engine/validate';
 import { scenes } from '../src/scenes';
 import lob from '../src/scenes/opponents-lob-you.beginner';
+import serve from '../src/scenes/returning-serve.beginner';
 
 describe('every scene', () => {
   for (const [name, scene] of Object.entries(scenes)) {
@@ -77,7 +78,42 @@ describe('the validator catches', () => {
     );
   });
 
+  it('a caption with too little time to read', () => {
+    expect(messages((s) => ({ ...s, captions: [s.captions[0]!, { t: 1, text: 'Six words is too many here.' }, { t: 1.5, text: 'b' }] }))).toMatch(
+      /Caption 2 .* is on screen for 0.50 s, but 6 words need 2.00 s/,
+    );
+  });
+
+  it('but never the last caption, which stays up after the end', () => {
+    expect(messages((s) => ({ ...s, captions: [...s.captions, { t: 8.5, text: 'A long closing line, still readable after the end.' }] }))).toBe('');
+  });
+
   it('a decision moment outside the scene', () => {
     expect(messages((s) => ({ ...s, decision: { ...s.decision, t: 20 } }))).toMatch(/decision moment/);
+  });
+});
+
+/** The serve scene with its serve changed. */
+const serving = (patch: Partial<Scene['shots'][0]>) => {
+  const s = structuredClone(serve) as Scene;
+  const shots = [{ ...s.shots[0], ...patch }, ...s.shots.slice(1)] as unknown as Scene['shots'];
+  return validate(compile({ ...s, shots })).map((p) => p.message).join('\n');
+};
+
+describe('the validator catches a serve', () => {
+  it('from in front of the service line', () => {
+    expect(serving({ from: [3.9, 3.6, 0.75] })).toMatch(/in front of the service line/);
+  });
+
+  it('hit above the waist', () => {
+    expect(serving({ from: [3.9, 1.9, 1.4] })).toMatch(/at or below the waist/);
+  });
+
+  it('that lands outside the box diagonally across', () => {
+    expect(serving({ to: [3, 16.3] })).toMatch(/outside the service box/);
+  });
+
+  it('that bounces into the mesh', () => {
+    expect(serving({ to: [9.4, 14.5] })).toMatch(/into the mesh/);
   });
 });
