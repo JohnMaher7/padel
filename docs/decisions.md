@@ -51,7 +51,7 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 ## Architecture
 
 - **Sheet music, not recordings.** Each scene is a small **data file** (player routes, shots, captions over time). One shared engine plays any scene. The AI writes scene data, never whole animated SVG files.
-- Stack: **Astro** (static site) + **GSAP** (animation timelines) + **TypeScript** (scene format is type-checked, so a broken scene fails the build) + **Cloudflare Pages** (hosting, auto-deploys from GitHub).
+- Stack: **Astro** (static site) + **GSAP** (animation timelines) + **TypeScript** (scene format is type-checked, so a broken scene fails the build) + **Cloudflare** (hosting, auto-deploys from GitHub). The plan said Cloudflare Pages; milestone 5 chose Cloudflare Workers instead (see Hosting).
 - A static site for now. A server gets added only if the marketplace or coach listings arrive.
 
 ### Engine and scene format (settled in milestone 3, 2026-09-25)
@@ -64,7 +64,7 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 - The four players are always `you`, `partner`, `opp1` and `opp2`. The name sets the team.
 - **GSAP is the playback clock**, not the animator. Its timeline handles play, pause, seek, 0.5× and the stop at the decision moment. On every frame the renderer asks the engine where everything is at the timeline's time and draws that. Nothing is tweened.
 - At contact the racket points at the ball, whichever way the player faces, so every hit visibly connects.
-- Scenes live in `src/scenes/<topic>.<level>.ts` and are listed in `src/scenes/index.ts`. Each one gets a test page at `/test/<topic>.<level>`, and `?t=4.1` freezes it at a moment. `npm run scene` prints every hit and bounce the engine worked out, where each hitter stands, and any problems.
+- Scenes live in `src/scenes/<topic>.<level>.ts` and are listed in `src/scenes/index.ts`. Each one gets a test page at `/test/<topic>.<level>`, and `?t=4.1` freezes it at a moment. The live site has test pages only for published topics, so a draft's animation can't leak out through them. `npm run scene` prints every hit and bounce the engine worked out, where each hitter stands, and any problems.
 
 ### Site structure (settled in milestone 4, 2026-09-25)
 
@@ -75,12 +75,24 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 
   `src/lib/topics.ts` checks that they line up, so a missing play or scene stops the build and says which file to add.
 - **URLs**: situations live at `/situations/<topic>`. Shots will live at `/shots/<topic>` once they're written. Until then, a play lists its shots by name without a link.
-- **Drafts** are built only by `npm run dev`, and each carries a yellow note saying how to publish it. `npm run build` leaves them out entirely, so a draft can't reach the live site.
+- **Drafts** are built only by `npm run dev`, and each carries a yellow note saying how to publish it. `npm run build` leaves them out entirely, so a draft can't reach the live site. (The repo on GitHub is public, though, so anyone can read a draft's Markdown there.)
 - **The level remembers itself.** The reader's choice of Beginner or Advanced is kept in their browser and applies on every topic. `#advanced` on a link opens that tab.
 - **The steps under each animation are its captions**, taken from the scene data rather than written twice. The list follows the animation, and tapping a step plays from there. The list is also the text version of the animation.
 - **Home page**: a map of our half of the court, with each situation pinned where it starts (`spot` in the topic's Markdown), beside a plain list of the situations.
 - **Site look**: the court itself. Text sits on "line white" paper, and animations sit on blue turf. The Beginner/Advanced switch is drawn as the two service boxes. Orange only ever means your team, and yellow only ever means the decision. Type is Barlow Condensed for headings and Barlow for text, as in the scene player. Dark mode follows the phone's setting.
 - **Working name**: "Padel tactics", set in one place (`src/site.ts`) until the name is chosen in milestone 7.
+
+### Hosting (settled in milestone 5, 2026-09-26)
+
+- **Cloudflare Workers, not Cloudflare Pages.** The plan said Pages. When we came to deploy, Cloudflare's docs were steering new projects to Workers, which now serves plain files too. Pages still works, but new features go to Workers. For a static site both are free and behave the same. Workers is also where server code would go if the marketplace or coach listings ever arrive, so starting there avoids a move later. What it costs us: the address is `padel-tactics.<account>.workers.dev` rather than the shorter `padel-tactics.pages.dev`, and a custom domain needs its DNS run by Cloudflare (free).
+- **No server code.** Cloudflare hands out the files that `npm run build` writes to `dist/`, and `dist/404.html` for pages that don't exist. `wrangler.jsonc` says so and names the Worker `padel-tactics`. The Worker's name in the Cloudflare dashboard must match it, or Cloudflare's build fails.
+- **`main` is the live site.** A push to `main` builds and deploys it. Any other branch gets its own preview address, so work can be checked on a phone before it goes live. (Until milestone 5, all the work was on the branch `claude/elegant-einstein-4x90jy`.)
+- **The build is the gate.** Cloudflare runs `npm run build`, which runs the type check, the tests and the validator before it builds anything. If any of them fails, nothing deploys, and the live site stays on the last good version.
+- **The settings live in the repo**, not only in the dashboard: `wrangler.jsonc` says how to serve the site, `.node-version` sets Node 24 (as on the laptop), and `public/_headers` sets the response headers. The dashboard holds only the build command (`npm run build`) and the branch.
+- **Hidden from search engines until the name and domain are chosen.** `public/_headers` sends `X-Robots-Tag: noindex` with every page, so Google doesn't list a temporary address that would later have to be moved. The site can still be shared by link.
+- **Addresses have no trailing slash** (`/situations/opponents-lob-you`). Astro writes each page as a `.html` file, so Cloudflare serves that address directly, and `/situations/opponents-lob-you/` redirects to it. With the default `index.html` folders, every tap on a topic cost a redirect first.
+- **It costs €0.** Cloudflare's free plan allows unlimited visits to static files and 3,000 build minutes a month (a build takes a minute or two), and it allows commercial sites. A public GitHub repo is free. Not chosen: Vercel's free plan, which forbids commercial use, and GitHub Pages, which isn't meant for a site that makes money. The first real cost is the domain in milestone 7. Workers' paid plan ($5 a month) would only be needed for server code beyond the free allowance.
+- **When the domain arrives (milestone 7):** move the domain's DNS to Cloudflare, attach the domain to the Worker, delete the noindex rule from `public/_headers`, and turn off or redirect the `workers.dev` address.
 
 ## Shot pages at launch
 
@@ -101,7 +113,7 @@ Build **"Opponents lob you"** fully end to end first, then the rest:
 | 2 | Visual style: 3 options of one scene (including player figures); owner picks | done 2026-09-24 (chose A, "Broadcast") |
 | 3 | Animation engine + scene data format, with "Opponents lob you" playing on a test page | done 2026-09-25 |
 | 4 | Astro site skeleton with the first topic page and tabs | done 2026-09-25 (phone + laptop site; first topic published) |
-| 5 | Deploy to Cloudflare (`*.pages.dev`) | |
+| 5 | Deploy to Cloudflare (`*.workers.dev`; planned as `*.pages.dev`) | code ready 2026-09-26; live once the owner connects Cloudflare |
 | 6 | Content pipeline: Opus researches → drafts text + scene data → preview → owner checks | |
 | 7 | Launch set of 10 topics, then choose a name and domain | |
 

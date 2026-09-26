@@ -1,0 +1,13 @@
+// How Cloudflare serves the site. There's no server code: Cloudflare hands out
+// the files that `npm run build` writes to dist/, and dist/404.html for any
+// page that doesn't exist. The Worker's name in the Cloudflare dashboard must
+// match "name", or Cloudflare's build fails.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "padel-tactics",
+  "compatibility_date": "2026-09-25",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

@@ -1,0 +1,4 @@
+# Until the site has its real name and domain (milestone 7), ask search
+# engines not to list it. Delete this rule when the site moves to the domain.
+/*
+  X-Robots-Tag: noindex
