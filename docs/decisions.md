@@ -18,6 +18,35 @@ A library of padel tactics and shots, taught through animated SVG scenes. It's w
 - **Content sourcing**: Opus researches coaching advice online. Good advice can be reused freely, but it's always reworded in our own words and nobody's animation is copied. The owner checks each topic before it goes live.
 - **Draft flag**: each topic has `draft: true | false`. Drafts render locally only; the owner flips the flag after checking.
 
+### Paths: "Start here" is the front door (chosen 2026-09-26)
+
+The owner raised this at the start of milestone 6: a home page that only says "pick a moment" leaves a newcomer with no idea where to start.
+
+- **Topics are songs and paths are playlists.** A path is one file listing topics in order. It adds no content, and a topic is never copied into a path. The library stays, and each topic still stands on its own, because search visitors land straight on a topic page.
+- **"Start here" follows one point from start to finish**, not a difficulty curve:
+  1. Where to stand at the start of a point (see below)
+  2. Returning serve
+  3. Ball off the back glass
+  4. When to take the net
+  5. Hitting down the middle
+  6. Opponents lob you
+
+  This is the pitch: "a padel point in six moments".
+- **Every topic in a path shows where it sits**, e.g. "Start here · 5 of 6", with previous/next links and a link to step 1. That strip is what turns someone arriving from Google into a path follower.
+- **The home page leads with "New to padel? Start here"**, with the court map and the list below it as "or jump to a moment".
+- **Progress ticks:** a topic counts as watched once its animation reaches the end. The tick is kept in the browser, like the level choice, so no accounts are needed.
+- A later **"Next level"** path picks up Both teams at the net, serving formations and the Advanced tabs.
+- **Positioning:** padel is won by where you stand, not how hard you hit. Most coaching on YouTube is technique in long videos. Ours is positioning, in 30-second scenes that stop and ask you to decide.
+
+### "Where to stand at the start of a point" (chosen 2026-09-26)
+
+- **One animation with no tabs**, for every level, so there's nothing to tap before you learn. It has four short chapters: you serve, your partner serves, they serve to you, they serve to your partner. Each chapter makes clear who's serving and which player is you. It then plays the serve and the first shot or two while everyone moves to their spot.
+- **Each chapter stops on "Where do you stand?"** before the players move. That's the site's usual decision moment, once per chapter. (Claude's proposal; the owner can drop it.)
+- **Anchors:** landmarks you can see on a real court are highlighted on the drawn court as the caption mentions them. The owner's examples: at the net, stand in line with the second post; to return, stand by the joint in the side glass. Research checks every anchor against coaching sources and the court's dimensions before we use it, because post spacing varies between court makers.
+- **What the engine needs:** chapters, where the ball and the players reset between them and the progress bar and the steps list mark each one, so a viewer can jump to theirs in one tap. It also needs a decision moment per chapter, highlighted landmarks, the mesh posts drawn on the court, and a topic that has one play for all levels.
+- Advanced serving formations (Australian, I-formation) will be a separate topic later.
+- **Milestone 6 proves the pipeline on "Returning serve" first**, because it uses the current format. "Where to stand" comes next, with its engine changes, so we don't try two new things at once.
+
 ### Platform: a website for phone and laptop (chosen 2026-09-25)
 
 The owner weighed three options at the start of milestone 4 and chose a website that works on both phone and laptop.
@@ -61,6 +90,7 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 - **Mistakes are blocked in two layers.** The type check rejects shapes that make no sense (a `from` on a later shot, a peak *and* a flight time, a fifth player). The validator (`src/engine/validate.ts`) rejects scenes that break padel or look fake: a hitter more than 1.2 m from the ball, a ball that bounces twice before it's hit, a shot into the net or out, the same team hitting twice, players running faster than 7 m/s or crossing the net, captions out of order. Every problem message says when it happens and what to change. Both layers run in `npm run build`, so a broken scene can't deploy.
 - For now, **a ball that flies out over the walls is an error.** Relax this when a scene needs a smash that goes out of the court.
 - Captions have only a start time; each one runs until the next. So gaps and overlaps can't be written.
+- **Captions are headlines, and each one gets time to be read (chosen 2026-09-26).** At 1× speed a caption stays on screen for at least 0.5 s plus 0.25 s per word, so a 6-word caption needs 2 s. **The animation never waits for a caption**; only the decision moment stops it. When a caption doesn't fit, shorten it, merge it with a neighbour or drop it, since the action often says it already. The longer explanation goes in the step's detail, which shows in the steps list under the animation rather than in the bar. The validator will check this. Both current scenes break the rule (the Advanced lob gives 16 words 0.8 s), so milestone 6 re-cuts their captions.
 - The four players are always `you`, `partner`, `opp1` and `opp2`. The name sets the team.
 - **GSAP is the playback clock**, not the animator. Its timeline handles play, pause, seek, 0.5× and the stop at the decision moment. On every frame the renderer asks the engine where everything is at the timeline's time and draws that. Nothing is tweened.
 - At contact the racket points at the ball, whichever way the player faces, so every hit visibly connects.
@@ -103,7 +133,7 @@ Written step-by-step technique + embedded YouTube coach clips, set to start at t
 
 Build **"Opponents lob you"** fully end to end first, then the rest:
 
-- Situations: Returning serve, Opponents lob you, When to take the net, Ball off the back glass, Both teams at the net, Hitting down the middle.
+- Situations: the six "Start here" topics: Where to stand at the start of a point, Returning serve, Ball off the back glass, When to take the net, Hitting down the middle, Opponents lob you. (Both teams at the net was replaced on 2026-09-26 and moved to the "Next level" path.)
 - Shots: Lob, Volley, Bandeja, Chiquita.
 
 ## Milestones
@@ -134,3 +164,4 @@ The engine (3) comes before the site (4) on purpose: the animation is the riskie
 - **How the site makes money.** Candidates: affiliate gear links (no Amazon.ie, so Amazon.co.uk/.de or EU padel shops), and coach listings. A flat listing fee avoids the booking and payment work that a commission would need.
 - **Second-hand gear marketplace.** A two-sided cold-start problem plus payments, fraud and consumer law. Revisit once there's traffic.
 - Email list, analytics, name and domain, a Spanish version, AI-generated video.
+- **Voiceover** (looked at on 2026-09-26, trial deferred). It's feasible. The captions are the script, and a build script sends each one to a cloud text-to-speech service (Google, Azure or OpenAI; Azure has Irish-English voices) and commits the MP3s. The whole launch set comes to about 10,000 characters, which the free tiers cover. Not chosen: the browser's built-in voice (robotic, and different on every phone), ElevenLabs (the most human, but about €5 a month for commercial use), and recording the owner's voice (every caption change means re-recording). Voice would be off by default behind a speaker button that remembers its setting, because phones at the club are in public. It would be muted at 0.5×. The caption timing rule above already gives each line enough time to be spoken. When it's picked up, trial it on one scene first.
