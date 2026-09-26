@@ -84,9 +84,10 @@ The owner picked option A of three in milestone 2: a drone camera over a real in
 
 ### Hosting (settled in milestone 5, 2026-09-26)
 
-- **Cloudflare Workers, not Cloudflare Pages.** The plan said Pages. When we came to deploy, Cloudflare's docs were steering new projects to Workers, which now serves plain files too. Pages still works, but new features go to Workers. For a static site both are free and behave the same. Workers is also where server code would go if the marketplace or coach listings ever arrive, so starting there avoids a move later. What it costs us: the address is `padel-tactics.<account>.workers.dev` rather than the shorter `padel-tactics.pages.dev`, and a custom domain needs its DNS run by Cloudflare (free).
-- **No server code.** Cloudflare hands out the files that `npm run build` writes to `dist/`, and `dist/404.html` for pages that don't exist. `wrangler.jsonc` says so and names the Worker `padel-tactics`. The Worker's name in the Cloudflare dashboard must match it, or Cloudflare's build fails.
-- **`main` is the live site.** A push to `main` builds and deploys it. Any other branch gets its own preview address, so work can be checked on a phone before it goes live. (Until milestone 5, all the work was on the branch `claude/elegant-einstein-4x90jy`.)
+- **Cloudflare Workers, not Cloudflare Pages.** The plan said Pages. When we came to deploy, Cloudflare's docs were steering new projects to Workers, which now serves plain files too. Pages still works, but new features go to Workers. For a static site both are free and behave the same. Workers is also where server code would go if the marketplace or coach listings ever arrive, so starting there avoids a move later. What it costs us: the address has the account name in it, as in `padel.johnmaher0.workers.dev`, where Pages would have given the shorter `padel.pages.dev`. And a custom domain needs its DNS run by Cloudflare (free).
+- **No server code.** Cloudflare hands out the files that `npm run build` writes to `dist/`, and `dist/404.html` for pages that don't exist. `wrangler.jsonc` says so and names the Worker `padel`, the same as the dashboard. (It said `padel-tactics` at first. Cloudflare's builds quietly swapped in the dashboard's name, although one of its docs pages says a mismatch fails the build. A deploy from the laptop wouldn't be swapped, so it would have made a second Worker.)
+- **Live at https://padel.johnmaher0.workers.dev** since 2026-09-26.
+- **`main` is the live site.** A push to `main` builds and deploys it. Cloudflare doesn't report build results to GitHub, so a failed build shows only on the Worker's **Deployments** page in the Cloudflare dashboard. Any other branch gets its own preview address, so work can be checked on a phone before it goes live. (Until milestone 5, all the work was on the branch `claude/elegant-einstein-4x90jy`.)
 - **The build is the gate.** Cloudflare runs `npm run build`, which runs the type check, the tests and the validator before it builds anything. If any of them fails, nothing deploys, and the live site stays on the last good version.
 - **The settings live in the repo**, not only in the dashboard: `wrangler.jsonc` says how to serve the site, `.node-version` sets Node 24 (as on the laptop), and `public/_headers` sets the response headers. The dashboard holds only the build command (`npm run build`) and the branch.
 - **Hidden from search engines until the name and domain are chosen.** `public/_headers` sends `X-Robots-Tag: noindex` with every page, so Google doesn't list a temporary address that would later have to be moved. The site can still be shared by link.
@@ -113,7 +114,7 @@ Build **"Opponents lob you"** fully end to end first, then the rest:
 | 2 | Visual style: 3 options of one scene (including player figures); owner picks | done 2026-09-24 (chose A, "Broadcast") |
 | 3 | Animation engine + scene data format, with "Opponents lob you" playing on a test page | done 2026-09-25 |
 | 4 | Astro site skeleton with the first topic page and tabs | done 2026-09-25 (phone + laptop site; first topic published) |
-| 5 | Deploy to Cloudflare (`*.workers.dev`; planned as `*.pages.dev`) | code ready 2026-09-26; live once the owner connects Cloudflare |
+| 5 | Deploy to Cloudflare (`*.workers.dev`; planned as `*.pages.dev`) | done 2026-09-26 (live at `padel.johnmaher0.workers.dev`) |
 | 6 | Content pipeline: Opus researches → drafts text + scene data → preview → owner checks | |
 | 7 | Launch set of 10 topics, then choose a name and domain | |
 
