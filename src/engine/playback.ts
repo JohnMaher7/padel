@@ -1,5 +1,5 @@
 // The playback clock. A GSAP timeline keeps time and handles play, pause,
-// seeking, half speed and the stop at the decision moment. Nothing is tweened:
+// seeking, half speed and the stop at each decision moment. Nothing is tweened:
 // on every tick the renderer asks the sampling functions where everything is
 // at the timeline's current time, and draws that.
 
@@ -18,16 +18,18 @@ export class Playback {
   private atDecision = false;
   private readonly listeners = new Set<(s: PlaybackState) => void>();
 
+  /** `decisions` are the times it stops at: one per chapter. */
   constructor(
     readonly duration: number,
-    readonly decisionT: number,
+    decisions: readonly number[],
   ) {
     this.tl = gsap.timeline({ paused: true, onUpdate: () => this.emit(), onComplete: () => this.emit() });
     this.tl.to({}, { duration }); // an empty tween sets the timeline's length
-    this.tl.addPause(decisionT, () => {
-      this.atDecision = true;
-      this.emit();
-    });
+    for (const t of decisions)
+      this.tl.addPause(t, () => {
+        this.atDecision = true;
+        this.emit();
+      });
   }
 
   state(): PlaybackState {
@@ -71,7 +73,7 @@ export class Playback {
     this.emit();
   }
 
-  /** Jump to time t, keeping play or pause. Jumping back before the decision means it stops there again. */
+  /** Jump to time t, keeping play or pause. Jumping back before a decision means it stops there again. */
   seek(t: number) {
     const wasPlaying = this.state().playing;
     this.atDecision = false;

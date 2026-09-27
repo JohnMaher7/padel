@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ballAt, ballPath, ballVelocityAt, type BallPath } from '../src/engine/ball';
 import { COURT, PHYSICS } from '../src/engine/court';
+import { isChaptered } from '../src/engine/sample';
 import type { Scene } from '../src/engine/types';
 import { scenes } from '../src/scenes';
 
@@ -45,7 +46,11 @@ describe('a shot', () => {
 
 // These are the guarantees that fix the milestone 2 "swerve" bug.
 describe('bounces, in every scene', () => {
-  for (const [name, scene] of Object.entries(scenes)) {
+  // A chaptered scene's chapters each have their own ball path.
+  const all = Object.entries(scenes).flatMap(([name, s]) =>
+    isChaptered(s) ? s.chapters.map((scene, i) => [`${name}, chapter ${i + 1}`, scene] as const) : [[name, s] as const],
+  );
+  for (const [name, scene] of all) {
     const path = ballPath(scene);
 
     it(`${name}: a floor bounce never changes the ball's heading`, () => {

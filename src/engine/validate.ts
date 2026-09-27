@@ -5,12 +5,30 @@
 
 import { launchVelocity } from './ball';
 import { COURT, LIMITS, PHYSICS } from './court';
-import { PLAYER_IDS, playerAt, speedAt, teamOf, type Compiled } from './sample';
+import { compile, isChaptered, PLAYER_IDS, playerAt, speedAt, teamOf, type Compiled } from './sample';
+import type { ChapteredScene, Scene } from './types';
 
 export interface Problem {
-  /** When it happens, in seconds, if it happens at a moment. */
+  /** When it happens, in seconds, if it happens at a moment. In a chaptered scene, the time within the chapter. */
   t: number | null;
   message: string;
+  /** In a chaptered scene, the chapter it's in, counting from 1. */
+  chapter?: number;
+}
+
+/**
+ * Checks a scene, or each chapter of a chaptered scene on its own. The players
+ * and the ball reset between chapters, so the jump from one chapter's end to
+ * the next one's start is never "running too fast".
+ */
+export function check(s: Scene | ChapteredScene): Problem[] {
+  if (!isChaptered(s)) return validate(compile(s));
+  const problems: Problem[] = [];
+  s.chapters.forEach((chapter, i) => {
+    if (!chapter.title.trim()) problems.push({ t: null, chapter: i + 1, message: 'The chapter needs a title that says what it\'s about, like "You serve".' });
+    for (const p of validate(compile(chapter))) problems.push({ ...p, chapter: i + 1 });
+  });
+  return problems;
 }
 
 const m = (n: number) => n.toFixed(2);
@@ -44,6 +62,11 @@ export function validate({ scene, ball }: Compiled): Problem[] {
         `Caption ${i + 1} ("${c.text}") is on screen for ${m(has)} s, but ${words} words need ${m(needs)} s. ` +
           `Shorten it, merge it with a neighbour, or start the next caption at ${m(c.t + needs)} s or later. Put the explanation in its detail.`,
       );
+  });
+
+  (scene.highlights ?? []).forEach((h, i) => {
+    if (!(h.t >= 0 && h.until > h.t && h.until <= duration))
+      add(h.t, `Highlight ${i + 1} (the ${h.end} ${h.landmark}) must start at 0 s or later, end after it starts, and end by ${duration} s.`);
   });
 
   // ---- Players ----------------------------------------------------------------
@@ -143,5 +166,7 @@ export function validate({ scene, ball }: Compiled): Problem[] {
 }
 
 export function formatProblems(problems: Problem[]): string {
-  return problems.map((p) => `${p.t === null ? '      ' : `${m(p.t).padStart(5)}s`}  ${p.message}`).join('\n');
+  return problems
+    .map((p) => `${p.chapter ? `chapter ${p.chapter} ` : ''}${p.t === null ? '      ' : `${m(p.t).padStart(5)}s`}  ${p.message}`)
+    .join('\n');
 }

@@ -155,3 +155,55 @@
   min-width: 34px;
   text-align: right;
 }
+
+/* Where one chapter ends and the next begins. */
+.sp-split {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  margin-left: -1.5px;
+  background: #05080c;
+}
+
+/* One button per chapter under the controls: two to a row on a phone, all in one row when there's room. */
+.sp-chapters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 4px;
+}
+
+.sp-chapters button {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 8px;
+  border: 0;
+  border-left: 3px solid var(--sp-panel-hover);
+  border-radius: 2px;
+  background: var(--sp-panel);
+  color: var(--sp-muted);
+  font: 600 13px/1.2 Barlow, system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sp-chapters button:hover {
+  background: var(--sp-panel-hover);
+  color: var(--sp-ink);
+}
+
+.sp-chapters button:focus-visible {
+  outline: 2px solid var(--sp-yellow);
+  outline-offset: 2px;
+}
+
+.sp-chapters button[aria-current] {
+  border-left-color: var(--sp-orange);
+  color: var(--sp-ink);
+}
+
+.sp-chapter-n {
+  font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif;
+}

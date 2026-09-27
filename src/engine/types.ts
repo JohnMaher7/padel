@@ -58,8 +58,23 @@ export interface Caption {
   detail?: string;
 }
 
+/** A landmark you can see on a real court, to line up with. Where each one is: `LANDMARKS` in court.ts. */
+export type Landmark = 'service-line' | 'glass-join' | 'second-post';
+
+/**
+ * Lights up a landmark while a caption names it, with a line across the court
+ * at its distance from the net, so the viewer sees what to line up with.
+ */
+export interface Highlight {
+  t: number;
+  until: number;
+  landmark: Landmark;
+  /** Our end of the court (near) or theirs (far). */
+  end: 'near' | 'far';
+}
+
 export interface Scene {
-  /** Used as the animation's accessible name. */
+  /** Used as the animation's accessible name. In a chaptered scene, it's the chapter's title ("You serve"). */
   title: string;
   duration: number;
   players: Record<PlayerId, readonly Keyframe[]>;
@@ -67,4 +82,15 @@ export interface Scene {
   captions: readonly Caption[];
   /** The animation stops here, shows the prompt, and waits for a tap. */
   decision: { t: number; prompt: string };
+  highlights?: readonly Highlight[];
+}
+
+/**
+ * Several short scenes played one after another, each from a fresh start: the
+ * players and the ball reset between them. Each chapter is a whole scene, with
+ * its own times from 0, its own decision, and a title that says what it's about.
+ */
+export interface ChapteredScene {
+  title: string;
+  chapters: readonly [Scene, Scene, ...Scene[]];
 }

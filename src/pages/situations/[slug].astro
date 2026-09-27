@@ -1,6 +1,7 @@
 ---
 // A situation page: general advice for every level, then a Beginner and an
-// Advanced play, each with its own animation.
+// Advanced play, each with its own animation. A topic whose play is the same at
+// every level has one play and no tabs.
 //
 // On a phone everything is one column: advice, the court, then the play.
 // On a laptop the court stays in view on the right while you read on the left.
@@ -12,7 +13,7 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import Base from '../../layouts/Base.astro';
 import { stepsOf } from '../../lib/steps';
 import type { Place } from '../../lib/paths';
-import { getPaths, getTopics, LEVEL_INFO, LEVELS, placesOf, type Topic } from '../../lib/topics';
+import { getPaths, getTopics, LEVEL_INFO, placesOf, type Topic } from '../../lib/topics';
 
 export async function getStaticPaths() {
   const [topics, paths] = await Promise.all([getTopics(), getPaths()]);
@@ -25,16 +26,18 @@ const { topic, places } = Astro.props as { topic: Topic; places: Place[] };
 const { title, summary, draft } = topic.entry.data;
 const { Content: Advice } = await render(topic.entry);
 const plays = await Promise.all(
-  LEVELS.map(async (level) => {
-    const play = topic.plays[level];
+  topic.plays.map(async (play) => {
     const { Content } = await render(play.entry);
     return { ...play, Content, steps: stepsOf(play.scene) };
   }),
 );
+/** With one play there are no tabs, and nothing belongs to a level. */
+const tabbed = plays.length > 1;
+const only = (level: string) => (tabbed ? level : undefined);
 ---
 
 <Base title={title} description={summary}>
-  <div class="topic" data-topic={topic.entry.id}>
+  <div class:list={['topic', { single: !tabbed }]} data-topic={topic.entry.id}>
     <div class="read">
       <SiteHeader />
       {
@@ -64,28 +67,30 @@ const plays = await Promise.all(
       </section>
     </div>
 
-    <section class="watch" aria-label="Animation of the play">
-      <div class="boxes" role="tablist" aria-label="Your level">
-        {
-          LEVELS.map((level) => (
-            <button
-              type="button"
-              role="tab"
-              id={`tab-${level}`}
-              data-level-tab={level}
-              aria-controls={`play-${level} stage-${level}`}
-              aria-selected={level === 'beginner' ? 'true' : 'false'}
-              tabindex={level === 'beginner' ? 0 : -1}
-            >
-              {LEVEL_INFO[level].name}
-            </button>
-          ))
-        }
-      </div>
+    <section class:list={['watch', { single: !tabbed }]} aria-label="Animation of the play">
+      {
+        tabbed && (
+          <div class="boxes" role="tablist" aria-label="Your level">
+            {plays.map(({ level }) => (
+              <button
+                type="button"
+                role="tab"
+                id={`tab-${level}`}
+                data-level-tab={level}
+                aria-controls={`play-${level} stage-${level}`}
+                aria-selected={level === 'beginner' ? 'true' : 'false'}
+                tabindex={level === 'beginner' ? 0 : -1}
+              >
+                {LEVEL_INFO[level].name}
+              </button>
+            ))}
+          </div>
+        )
+      }
       {
         plays.map((p) => (
-          <div class="stage" id={`stage-${p.level}`} data-only={p.level}>
-            <p class="aim">{LEVEL_INFO[p.level].aim}</p>
+          <div class="stage" id={`stage-${p.level}`} data-only={only(p.level)}>
+            {tabbed && <p class="aim">{LEVEL_INFO[p.level].aim}</p>}
             <div data-stage={p.level} data-scene={p.sceneName} />
           </div>
         ))
@@ -95,16 +100,29 @@ const plays = await Promise.all(
     <div class="plays">
       {
         plays.map((p) => (
-          <section class="play" id={`play-${p.level}`} role="tabpanel" aria-labelledby={`tab-${p.level}`} data-only={p.level}>
+          <section
+            class="play"
+            id={`play-${p.level}`}
+            role={tabbed ? 'tabpanel' : undefined}
+            aria-labelledby={tabbed ? `tab-${p.level}` : undefined}
+            data-only={only(p.level)}
+          >
             <p class="level">{LEVEL_INFO[p.level].name}</p>
             <h2>{p.entry.data.play}</h2>
 
             <h3 class="steps-h">Step by step</h3>
             <ol class="steps" data-steps={p.level}>
               {p.steps.map((s) =>
-                s.kind === 'decision' ? (
+                s.kind === 'chapter' ? (
+                  <li class="chapter-row">
+                    <button type="button" class="step chapter" data-key={s.key} data-seek={s.seek}>
+                      <span class="n">{s.n}</span>
+                      <span>{s.text}</span>
+                    </button>
+                  </li>
+                ) : s.kind === 'decision' ? (
                   <li>
-                    <button type="button" class="step decision" data-key="decision" data-t={s.t}>
+                    <button type="button" class="step decision" data-key={s.key} data-seek={s.seek}>
                       <span class="n" aria-hidden="true" />
                       <span>
                         <strong>Your decision.</strong> {s.text}
@@ -113,7 +131,7 @@ const plays = await Promise.all(
                   </li>
                 ) : (
                   <li>
-                    <button type="button" class="step" data-key={s.n - 1} data-t={s.t}>
+                    <button type="button" class="step" data-key={s.key} data-seek={s.seek}>
                       <span class="n">{s.n}</span>
                       <span>
                         {s.text}
@@ -156,20 +174,20 @@ const plays = await Promise.all(
 
 <script>
   import { playScene } from '../../engine';
-  import { captionAt } from '../../engine/sample';
-  import { scenes } from '../../scenes';
+  import { stepKeyAt } from '../../lib/steps';
   import { markWatched, onShow, showTicks } from '../../lib/watched';
+  import { scenes } from '../../scenes';
 
   type Level = 'beginner' | 'advanced';
   const html = document.documentElement;
   const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-level-tab]')];
-  const players = new Map<Level, ReturnType<typeof playScene>>();
+  const players = new Map<string, ReturnType<typeof playScene>>();
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const topicId = document.querySelector<HTMLElement>('[data-topic]')!.dataset.topic!;
   onShow(showTicks);
 
   for (const stage of document.querySelectorAll<HTMLElement>('[data-stage]')) {
-    const level = stage.dataset.stage as Level;
+    const level = stage.dataset.stage!;
     const scene = scenes[stage.dataset.scene!]!;
     const player = playScene(stage, scene);
     players.set(level, player);
@@ -184,7 +202,7 @@ const plays = await Promise.all(
     // The step list follows the animation, and tapping a step plays from there.
     const steps = [...document.querySelectorAll<HTMLButtonElement>(`[data-steps="${level}"] .step`)];
     player.playback.on((s) => {
-      const current = s.atDecision ? 'decision' : String(captionAt(scene, s.t).index);
+      const current = stepKeyAt(player.timeline, s.t, s.atDecision);
       for (const step of steps) {
         if (step.dataset.key === current) step.setAttribute('aria-current', 'step');
         else step.removeAttribute('aria-current');
@@ -192,9 +210,7 @@ const plays = await Promise.all(
     });
     for (const step of steps) {
       step.addEventListener('click', () => {
-        const t = Number(step.dataset.t);
-        // The decision row replays the moment just before the stop; any other row starts just after its caption appears.
-        player.playback.seek(step.dataset.key === 'decision' ? t - 0.4 : t === 0 ? 0 : t + 0.01);
+        player.playback.seek(Number(step.dataset.seek));
         player.playback.play();
         stage.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
       });
@@ -219,8 +235,10 @@ const plays = await Promise.all(
     history.replaceState(null, '', `#${level}`);
   }
 
-  select(html.dataset.level === 'advanced' ? 'advanced' : 'beginner');
+  // The level tabs, when the topic has a play for each level.
+  if (tabs.length) select(html.dataset.level === 'advanced' ? 'advanced' : 'beginner');
   window.addEventListener('hashchange', () => {
+    if (!tabs.length) return;
     if (location.hash === '#beginner' || location.hash === '#advanced') select(location.hash.slice(1) as Level, { remember: true });
   });
   tabs.forEach((tab, i) => {
@@ -240,6 +258,10 @@ const plays = await Promise.all(
     /* Room the court panel needs besides the court itself: tabs, the level's aim, caption bar, controls. */
     --watch-chrome: 270px;
     --court-w: clamp(250px, calc((100dvh - var(--watch-chrome)) * 118 / 218), 440px);
+  }
+  /* A single play has no tabs or level line, but a chaptered one has its row of chapter buttons. */
+  .topic.single {
+    --watch-chrome: 236px;
   }
 
   .read,
@@ -415,6 +437,32 @@ const plays = await Promise.all(
     font-size: 16px;
     color: var(--ink-soft);
   }
+  /* A chapter's heading: tap it to jump to the chapter. */
+  .chapter-row:not(:first-child) {
+    margin-top: 18px;
+  }
+  .chapter {
+    align-items: center;
+    padding-top: 12px;
+    padding-bottom: 8px;
+    border-top: 2px solid var(--ink);
+    font: 700 23px/1.1 var(--display);
+  }
+  .chapter .n {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 2px;
+    font-size: 18px;
+  }
+  .chapter:hover {
+    background: transparent;
+    color: var(--kit-ink);
+  }
+
   /* The decision row carries the progress bar's yellow mark. */
   .decision .n::before {
     content: '';

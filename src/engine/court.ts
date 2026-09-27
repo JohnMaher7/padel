@@ -1,5 +1,7 @@
 // The court and the physics the engine plays by. Metres, seconds.
 
+import type { Landmark } from './types';
+
 export const COURT = {
   width: 10,
   length: 20,
@@ -12,7 +14,23 @@ export const COURT = {
   sideGlass: 4,
   /** A ball that reaches a wall above this height leaves the court. */
   wallHeight: 3,
+  /**
+   * The side fence is made of 2 m panels on most courts, so its posts stand 2 m and 4 m from the
+   * net (the glass starts at 6 m). Court makers vary, which is why the words say "about".
+   */
+  posts: [2, 4],
 } as const;
+
+/**
+ * Where each landmark is, as its distance from the net (m). Counting the net post as the first,
+ * the second post is the first fence post back from the net. The side glass is two 2 m panels,
+ * so its join is 2 m from the back wall.
+ */
+export const LANDMARKS: Record<Landmark, number> = {
+  'second-post': COURT.posts[0],
+  'service-line': COURT.service,
+  'glass-join': COURT.length / 2 - 2,
+};
 
 /**
  * How a surface returns the ball. `normal` is the share of the speed going

@@ -6,11 +6,27 @@
 // ball path; when it is comes from the Playback clock.
 
 import { gsap } from 'gsap';
-import { ballAt, type BallEvent } from '../ball';
-import { COURT } from '../court';
+import type { BallEvent } from '../ball';
+import { COURT, LANDMARKS } from '../court';
 import type { Playback, PlaybackState } from '../playback';
-import { captionAt, clamp, PLAYER_IDS, playerAt, recentEvents, speedAt, swingAngle, swingAt, teamOf, type Compiled } from '../sample';
-import type { PlayerId } from '../types';
+import {
+  ballPosition,
+  captionAt,
+  chapterAt,
+  clamp,
+  PLAYER_IDS,
+  playerAt,
+  recentEvents,
+  serveBall,
+  speedAt,
+  swingAngle,
+  swingAt,
+  teamOf,
+  type Chapter,
+  type Compiled,
+  type Timeline,
+} from '../sample';
+import type { Highlight, PlayerId } from '../types';
 import { html, set, setText, svg } from './dom';
 import './broadcast.css';
 
@@ -22,6 +38,9 @@ const SHADOW = { dx: 0.34, dy: 0.2 };
 /** In a figure's own drawing: the racket shoulder and the centre of the racket head. */
 const SHOULDER = [2.8, 0.1] as const;
 const RACKET = [4.15, -5.6] as const;
+
+/** Landmark highlights. A colour of their own: orange is our team and yellow is the decision. */
+const MARK = '#7ef4ff';
 
 const TEAM = {
   us: { shirt: '#ff7a2f', edge: '#a8420c', rim: '#ffb27e' },
@@ -44,7 +63,7 @@ const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 
 let mounted = 0;
 
-export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, playback: Playback) {
+export function mountBroadcast(root: HTMLElement, tl: Timeline, playback: Playback) {
   const id = `sp${++mounted}`; // keeps SVG ids unique when a page shows several scenes
   const W = COURT.width * U;
   const L = COURT.length * U;
@@ -53,7 +72,7 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
   const frame = html('div', { class: 'sp-frame' }, player);
   const s = svg(
     'svg',
-    { viewBox: `${-PAD} ${-PAD} ${W + 2 * PAD} ${L + 2 * PAD}`, role: 'img', 'aria-label': `Top-down animation of a padel point: ${scene.title}` },
+    { viewBox: `${-PAD} ${-PAD} ${W + 2 * PAD} ${L + 2 * PAD}`, role: 'img', 'aria-label': `Top-down animation of a padel point: ${tl.title}` },
     frame,
   );
 
@@ -92,14 +111,20 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
     svg('path', { d: `M${x + 6} ${L + 1.9}l3 -1.3M${x + 8.5} ${L + 1.9}l1.6 -.7` }, shine);
   }
 
-  // Net, with its shadow on the turf.
+  // Posts hold up the side fence. They're landmarks a player can line up with.
   const N = COURT.net * U;
+  const posts = svg('g', { fill: '#8d9db0', stroke: '#1d2a38', 'stroke-width': 0.25 }, walls);
+  for (const x of [-2.2, W - 0.2])
+    for (const d of COURT.posts) for (const y of [N - d * U, N + d * U]) svg('rect', { x, y: y - 0.6, width: 2.4, height: 1.2, rx: 0.3 }, posts);
+
+  // Net, with its shadow on the turf.
   svg('rect', { x: 0, y: N + 0.6, width: W, height: 2.2, fill: '#000', opacity: 0.16, 'clip-path': `url(#${id}-floor)`, transform: 'translate(1.2 0)' }, s);
   svg('rect', { x: -1, y: N - 0.7, width: W + 2, height: 1.4, fill: `url(#${id}-net)` }, s);
   svg('line', { x1: -1, y1: N - 0.65, x2: W + 1, y2: N - 0.65, stroke: '#ffffff', 'stroke-width': 0.5 }, s);
   for (const x of [-2.6, W + 0.6]) svg('rect', { x, y: N - 1.4, width: 2, height: 2.8, rx: 0.4, fill: '#0a1420', stroke: '#546577', 'stroke-width': 0.3 }, s);
 
   // ---- Layers, bottom to top ---------------------------------------------------
+  const markLayer = svg('g', {}, s);
   const shadowLayer = svg('g', { 'clip-path': `url(#${id}-floor)` }, s);
   const ringLayer = svg('g', {}, s);
   const fxLayer = svg('g', {}, s);
@@ -107,9 +132,33 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
   const ballLayer = svg('g', {}, s);
   const hudLayer = svg('g', { 'font-family': '"Barlow Condensed", system-ui, sans-serif', 'font-weight': 700 }, s);
 
+  // ---- Landmark highlights ------------------------------------------------------
+  // A line across the court at the landmark's distance from the net, and a ring on it at each side
+  // wall, so the viewer sees what to line up with. Drawn once for each landmark the scene uses.
+  const marks = new Map<string, SVGGElement>();
+  const markKey = (h: Highlight) => `${h.end} ${h.landmark}`;
+  for (const { scene } of tl.chapters)
+    for (const h of scene.highlights ?? []) {
+      const key = markKey(h);
+      if (marks.has(key)) continue;
+      const d = LANDMARKS[h.landmark];
+      const y = (h.end === 'near' ? COURT.net + d : COURT.net - d) * U;
+      const g = svg('g', { style: 'display:none' }, markLayer);
+      if (h.landmark === 'service-line') {
+        svg('line', { x1: 0, y1: y, x2: W, y2: y, stroke: MARK, 'stroke-width': 1.6, opacity: 0.35 }, g);
+        svg('line', { x1: 0, y1: y, x2: W, y2: y, stroke: MARK, 'stroke-width': 0.6 }, g);
+      } else {
+        svg('line', { x1: 0, y1: y, x2: W, y2: y, stroke: MARK, 'stroke-width': 0.45, 'stroke-dasharray': '2.2 1.6' }, g);
+        for (const x of [-1, W + 1]) {
+          svg('circle', { cx: x, cy: y, r: 3.4, fill: MARK, 'fill-opacity': 0.22, stroke: MARK, 'stroke-width': 0.5 }, g);
+        }
+      }
+      marks.set(key, g);
+    }
+
   // ---- Players ------------------------------------------------------------------
   // At contact the racket points straight at the ball, whichever way the player faces.
-  const aims = scene.shots.map((shot, i) => {
+  const aimsOf = ({ scene, ball }: Compiled) => scene.shots.map((shot, i) => {
     const hit = ball.events.find((e) => e.kind === 'hit' && e.shot === i);
     if (!hit) return 0;
     const p = playerAt(scene, shot.by, shot.t);
@@ -122,6 +171,7 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
     const racket = Math.atan2(RACKET[1] - SHOULDER[1], RACKET[0] - SHOULDER[0]);
     return clamp(wrap180(deg(toBall - racket)), -150, 110);
   });
+  const aims = tl.chapters.map(aimsOf);
 
   function figure(pid: PlayerId) {
     const team = TEAM[teamOf(pid)];
@@ -154,7 +204,8 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
       you = { ring, tag };
     }
 
-    return (t: number, now: number, decide: boolean) => {
+    return (c: Chapter, ci: number, t: number, now: number, decide: boolean) => {
+      const { scene } = c;
       const p = playerAt(scene, pid, t);
       const X = p.x * U;
       const Y = p.y * U;
@@ -168,7 +219,7 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
         set(l.foot, { cx: l.x, cy: 0.3 + o + Math.sign(o) * 0.5 });
       });
       const swing = swingAt(scene, pid, t);
-      const angle = swing ? swingAngle(swing.phase, aims[swing.shot] ?? 0) : 0;
+      const angle = swing ? swingAngle(swing.phase, aims[ci]?.[swing.shot] ?? 0) : 0;
       arm.setAttribute('transform', `rotate(${angle} ${SHOULDER[0]} ${SHOULDER[1]})`);
       if (you) {
         const r = decide ? 7 + 1.8 * (0.5 + 0.5 * Math.sin(now / 180)) : 7;
@@ -230,12 +281,28 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
   const playButton = html('button', { type: 'button', class: 'sp-play', 'aria-label': 'Play' }, controls);
   const replayButton = html('button', { type: 'button', 'aria-label': 'Replay' }, controls);
   replayButton.innerHTML = ICON.replay;
-  const track = html('div', { class: 'sp-track', role: 'slider', tabindex: 0, 'aria-label': 'Position in the scene', 'aria-valuemin': 0, 'aria-valuemax': scene.duration }, controls);
+  const track = html('div', { class: 'sp-track', role: 'slider', tabindex: 0, 'aria-label': 'Position in the scene', 'aria-valuemin': 0, 'aria-valuemax': tl.duration }, controls);
   const fill = html('div', { class: 'sp-fill' }, track);
-  const mark = html('div', { class: 'sp-mark', title: 'Decision moment' }, track);
-  mark.style.left = `${(scene.decision.t / scene.duration) * 100}%`;
+  const at = (t: number) => `${(t / tl.duration) * 100}%`;
+  for (const c of tl.chapters.slice(1)) html('div', { class: 'sp-split' }, track).style.left = at(c.start);
+  for (const d of tl.decisions) html('div', { class: 'sp-mark', title: 'Decision moment' }, track).style.left = at(d.t);
   const time = html('span', { class: 'sp-time' }, controls);
   const speedButton = html('button', { type: 'button', 'aria-pressed': 'false', 'aria-label': 'Half speed' }, controls, '0.5×');
+
+  // A chaptered scene gets a button per chapter, so a viewer can jump to theirs in one tap.
+  const chapterList = tl.chaptered ? html('div', { class: 'sp-chapters', role: 'group', 'aria-label': 'Chapters' }, player) : null;
+  const chapterButtons = chapterList
+    ? tl.chapters.map((c, i) => {
+        const b = html('button', { type: 'button' }, chapterList);
+        html('span', { class: 'sp-chapter-n' }, b, String(i + 1));
+        html('span', {}, b, c.scene.title);
+        b.onclick = () => {
+          playback.seek(c.start);
+          playback.play();
+        };
+        return b;
+      })
+    : [];
 
   const tapCourt = () => playback.toggle();
   frame.addEventListener('click', tapCourt);
@@ -244,7 +311,7 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
   speedButton.onclick = () => playback.setSpeed(playback.state().speed === 1 ? 0.5 : 1);
   track.onclick = (e) => {
     const r = track.getBoundingClientRect();
-    playback.seek(((e.clientX - r.left) / r.width) * scene.duration);
+    playback.seek(((e.clientX - r.left) / r.width) * tl.duration);
   };
   track.onkeydown = (e) => {
     const step = { ArrowLeft: -0.5, ArrowDown: -0.5, ArrowRight: 0.5, ArrowUp: 0.5 }[e.key];
@@ -255,11 +322,26 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
 
   // ---- Drawing ---------------------------------------------------------------------------
   let lastPlayKey = '';
+  let marking = false;
   function draw(st: PlaybackState, now: number) {
-    const { t } = st;
-    figures.forEach((f) => f(t, now, st.atDecision));
+    const { chapter: c, index: ci, local: t } = chapterAt(tl, st.t);
+    figures.forEach((f) => f(c, ci, t, now, st.atDecision));
 
-    const [x, y, h] = ballAt(ball, t);
+    // Landmarks fade in and out, and pulse gently while they're named.
+    marking = false;
+    const lit = new Map<string, number>();
+    for (const h of c.scene.highlights ?? []) {
+      const fade = clamp((t - h.t) / 0.25, 0, 1) * clamp((h.until - t) / 0.25, 0, 1);
+      if (fade > 0) lit.set(markKey(h), Math.max(lit.get(markKey(h)) ?? 0, fade));
+    }
+    marks.forEach((g, key) => {
+      const fade = lit.get(key) ?? 0;
+      g.style.display = fade > 0 ? '' : 'none';
+      if (fade > 0) g.setAttribute('opacity', String(fade * (0.75 + 0.25 * Math.sin(now / 200))));
+      marking ||= fade > 0;
+    });
+
+    const [x, y, h] = ballPosition(c, t);
     const k = 1 + h * 0.07; // nearer the camera looks bigger
     const bx = x * U;
     const by = y * U;
@@ -268,29 +350,32 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
     set(ballShadow, { cx: (x + h * SHADOW.dx) * U, cy: (y + h * SHADOW.dy) * U, opacity: clamp(0.45 - h * 0.03, 0.18, 0.45) });
     const points: string[] = [];
     for (let i = 6; i >= 0; i--) {
-      const [tx, ty] = ballAt(ball, Math.max(0, t - i * 0.022));
+      const [tx, ty] = ballPosition(c, Math.max(0, t - i * 0.022));
       points.push(`${tx * U},${ty * U}`);
     }
-    set(trail, { points: points.join(' '), 'stroke-width': 1.1 * k });
+    // No trail while the server is carrying the ball to their spot.
+    set(trail, { points: points.join(' '), 'stroke-width': 1.1 * k, display: serveBall(c.scene, t)?.inHand ? 'none' : 'inline' });
     heightChip.style.display = h > 2.2 ? '' : 'none';
     heightChip.setAttribute('transform', `translate(${bx + 3} ${by - 3})`);
     setText(heightText, `${h.toFixed(1)} m`);
 
-    const events = recentEvents(ball, t);
+    const events = recentEvents(c.ball, t);
     fxPool.forEach((el, i) => drawEffect(el, events[i]));
 
     decideRing.style.display = st.atDecision ? '' : 'none';
     if (st.atDecision) set(decideRing, { cx: bx, cy: by, r: 4 + 1.2 * Math.sin(now / 180) });
 
     cap.classList.toggle('decide', st.atDecision);
+    const chapterName = tl.chaptered ? `${c.scene.title} · ` : '';
     if (st.atDecision) {
-      setText(capStep, 'Decision · tap to see');
-      setText(capText, scene.decision.prompt);
+      setText(capStep, tl.chaptered ? `${chapterName}Decision` : 'Decision · tap to see');
+      setText(capText, c.scene.decision.prompt);
     } else {
-      const c = captionAt(scene, t);
-      setText(capStep, `Step ${c.index + 1} of ${scene.captions.length}`);
-      setText(capText, c.text);
+      const caption = captionAt(c.scene, t);
+      setText(capStep, `${chapterName}Step ${caption.index + 1} of ${c.scene.captions.length}`);
+      setText(capText, caption.text);
     }
+    chapterButtons.forEach((b, i) => (i === ci ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
 
     const playKey = st.atDecision ? 'go' : st.playing ? 'pause' : 'play';
     if (playKey !== lastPlayKey) {
@@ -299,19 +384,19 @@ export function mountBroadcast(root: HTMLElement, { scene, ball }: Compiled, pla
       playButton.innerHTML = playKey === 'go' ? `${ICON.play}Continue` : ICON[playKey];
       playButton.setAttribute('aria-label', { go: 'Continue', pause: 'Pause', play: 'Play' }[playKey]);
     }
-    fill.style.width = `${(t / scene.duration) * 100}%`;
-    track.setAttribute('aria-valuenow', t.toFixed(1));
-    track.setAttribute('aria-valuetext', `${t.toFixed(1)} seconds`);
-    setText(time, `${t.toFixed(1)}s`);
+    fill.style.width = at(st.t);
+    track.setAttribute('aria-valuenow', st.t.toFixed(1));
+    track.setAttribute('aria-valuetext', `${st.t.toFixed(1)} seconds`);
+    setText(time, `${st.t.toFixed(1)}s`);
     speedButton.setAttribute('aria-pressed', st.speed === 1 ? 'false' : 'true');
   }
 
-  // Draw once per frame, and only when something changed (or the decision prompt is pulsing).
+  // Draw once per frame, and only when something changed (or the decision prompt or a landmark is pulsing).
   let dirty = true;
   const off = playback.on(() => (dirty = true));
   const tick = () => {
     const st = playback.state();
-    if (!dirty && !st.atDecision) return;
+    if (!dirty && !st.atDecision && !marking) return;
     dirty = false;
     draw(st, performance.now());
   };

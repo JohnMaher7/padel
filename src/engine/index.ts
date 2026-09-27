@@ -2,25 +2,28 @@
 
 import { Playback } from './playback';
 import { mountBroadcast } from './render/broadcast';
-import { compile } from './sample';
-import type { Scene } from './types';
-import { formatProblems, validate } from './validate';
+import { timeline } from './sample';
+import type { ChapteredScene, Scene } from './types';
+import { check, formatProblems } from './validate';
 
-export type { Scene } from './types';
+export type { ChapteredScene, Scene } from './types';
 
 export interface PlaySceneOptions {
   /** Start playing once the scene scrolls into view. Ignored when the viewer prefers reduced motion. */
   autoplay?: boolean;
 }
 
-export function playScene(root: HTMLElement, scene: Scene, { autoplay = true }: PlaySceneOptions = {}) {
-  const compiled = compile(scene);
+export function playScene(root: HTMLElement, scene: Scene | ChapteredScene, { autoplay = true }: PlaySceneOptions = {}) {
   if (import.meta.env.DEV) {
-    const problems = validate(compiled);
+    const problems = check(scene);
     if (problems.length) console.warn(`Scene "${scene.title}" has problems:\n${formatProblems(problems)}`);
   }
-  const playback = new Playback(scene.duration, scene.decision.t);
-  const view = mountBroadcast(root, compiled, playback);
+  const tl = timeline(scene);
+  const playback = new Playback(
+    tl.duration,
+    tl.decisions.map((d) => d.t),
+  );
+  const view = mountBroadcast(root, tl, playback);
 
   let observer: IntersectionObserver | undefined;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -38,6 +41,7 @@ export function playScene(root: HTMLElement, scene: Scene, { autoplay = true }: 
 
   return {
     playback,
+    timeline: tl,
     destroy() {
       observer?.disconnect();
       view.destroy();

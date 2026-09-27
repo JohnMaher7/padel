@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Scene, Shot } from '../src/engine/types';
 import { compile } from '../src/engine/sample';
-import { formatProblems, validate } from '../src/engine/validate';
+import { check, formatProblems, validate } from '../src/engine/validate';
 import { scenes } from '../src/scenes';
 import lob from '../src/scenes/opponents-lob-you.beginner';
 import serve from '../src/scenes/returning-serve.beginner';
@@ -9,7 +9,7 @@ import serve from '../src/scenes/returning-serve.beginner';
 describe('every scene', () => {
   for (const [name, scene] of Object.entries(scenes)) {
     it(`${name} has no problems`, () => {
-      const problems = validate(compile(scene));
+      const problems = check(scene);
       expect(problems, formatProblems(problems)).toEqual([]);
     });
   }

@@ -2,8 +2,9 @@
 // (scene, t), so seeking, replaying and slow motion all come for free: the
 // renderer just asks "what does the court look like at 4.2 s?"
 
-import { ballPath, type BallEvent, type BallPath } from './ball';
-import type { Keyframe, PlayerId, Scene } from './types';
+import { ballAt, ballPath, type BallEvent, type BallPath } from './ball';
+import { PHYSICS } from './court';
+import type { ChapteredScene, Keyframe, PlayerId, Scene, Vec3 } from './types';
 
 export const PLAYER_IDS: readonly PlayerId[] = ['you', 'partner', 'opp1', 'opp2'];
 
@@ -17,6 +18,44 @@ export interface Compiled {
 
 export function compile(scene: Scene): Compiled {
   return { scene, ball: ballPath(scene) };
+}
+
+/** A chapter placed on the whole animation's clock. */
+export interface Chapter extends Compiled {
+  start: number;
+  end: number;
+}
+
+/** What the player plays: a scene, or a chaptered scene's chapters back to back. A plain scene is a single chapter. */
+export interface Timeline {
+  title: string;
+  duration: number;
+  /** False for a plain scene: its one chapter has no title to show. */
+  chaptered: boolean;
+  chapters: Chapter[];
+  /** Every decision moment, on the whole clock. */
+  decisions: { t: number; prompt: string }[];
+}
+
+export const isChaptered = (s: Scene | ChapteredScene): s is ChapteredScene => 'chapters' in s;
+
+export function timeline(s: Scene | ChapteredScene): Timeline {
+  let start = 0;
+  const chapters = (isChaptered(s) ? s.chapters : [s]).map((scene): Chapter => {
+    const chapter = { ...compile(scene), start, end: start + scene.duration };
+    start = chapter.end;
+    return chapter;
+  });
+  const decisions = chapters.map(({ scene, start }) => ({ t: start + scene.decision.t, prompt: scene.decision.prompt }));
+  return { title: s.title, duration: start, chaptered: isChaptered(s), chapters, decisions };
+}
+
+/** The chapter playing at time t, and the time within it. At the moment one chapter ends, the next has begun. */
+export function chapterAt(tl: Timeline, t: number): { chapter: Chapter; index: number; local: number } {
+  let index = 0;
+  while (index + 1 < tl.chapters.length && t >= tl.chapters[index + 1]!.start) index++;
+  const chapter = tl.chapters[index]!;
+  return { chapter, index, local: t - chapter.start };
 }
 
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f;
@@ -120,4 +159,49 @@ export function captionAt(scene: Scene, t: number): { index: number; text: strin
 /** Ball events (hits and bounces) from the last `window` seconds, with their age. */
 export function recentEvents(ball: BallPath, t: number, window = 0.6): (BallEvent & { age: number })[] {
   return ball.events.filter((e) => t >= e.t && t - e.t < window).map((e) => ({ ...e, age: t - e.t }));
+}
+
+/** How long before a serve the server drops the ball, so it bounces once and rises to meet the racket. */
+const SERVE_DROP = 0.8;
+const HAND_HEIGHT = 1.0;
+/** The free hand, in metres, in the player's own frame (x to their right, y behind them). Matches the drawn left arm. */
+const HAND = [-0.39, -0.28] as const;
+
+/**
+ * Where the ball is before a serve: in the server's free hand while they walk
+ * to their spot, then dropped to bounce once and rise to the contact point.
+ * Null once the serve is hit, or if the scene doesn't start with a serve.
+ */
+export function serveBall(scene: Scene, t: number): { at: Vec3; inHand: boolean } | null {
+  const serve = scene.shots[0];
+  if (!serve.serve || t >= serve.t) return null;
+  const hand = (u: number): [number, number] => {
+    const p = playerAt(scene, serve.by, u);
+    const r = (p.facing * Math.PI) / 180;
+    return [p.x + HAND[0] * Math.cos(r) - HAND[1] * Math.sin(r), p.y + HAND[0] * Math.sin(r) + HAND[1] * Math.cos(r)];
+  };
+  const drop = serve.t - SERVE_DROP;
+  if (t <= drop) return { at: [...hand(t), HAND_HEIGHT], inHand: true };
+
+  const g = PHYSICS.gravity;
+  const [hx, hy] = hand(drop);
+  const [fx, fy, fh] = serve.from;
+  const u = t - drop;
+  const fall = Math.sqrt((2 * HAND_HEIGHT) / g);
+  let h: number;
+  if (u < fall) h = HAND_HEIGHT - (g * u * u) / 2;
+  else {
+    // The bounce sends it up just fast enough to reach the contact height as the racket arrives.
+    const rise = SERVE_DROP - fall;
+    const up = (fh + (g * rise * rise) / 2) / rise;
+    const w = u - fall;
+    h = up * w - (g * w * w) / 2;
+  }
+  const f = u / SERVE_DROP;
+  return { at: [hx + (fx - hx) * f, hy + (fy - hy) * f, Math.max(0, h)], inHand: false };
+}
+
+/** Where the ball is at time t, including in the server's hand before a serve. */
+export function ballPosition({ scene, ball }: Compiled, t: number): Vec3 {
+  return serveBall(scene, t)?.at ?? ballAt(ball, t);
 }

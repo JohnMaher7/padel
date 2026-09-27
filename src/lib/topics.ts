@@ -3,30 +3,34 @@
 // with a message that says which file to add or fix.
 
 import { getCollection, type CollectionEntry } from 'astro:content';
-import type { Scene } from '../engine/types';
+import type { ChapteredScene, Scene } from '../engine/types';
 import { scenes } from '../scenes';
 import { placeIn, resolvePath, type Path, type Place, type ShownTopic } from './paths';
 
 export const LEVELS = ['beginner', 'advanced'] as const;
 export type Level = (typeof LEVELS)[number];
+/** A play is for one level, or for every level: a topic whose right play doesn't depend on the level has a single play. */
+export type PlayLevel = Level | 'all';
 
 /** What each level means. The level is the player's overall level, not theirs against the opponents. */
-export const LEVEL_INFO: Record<Level, { name: string; aim: string }> = {
+export const LEVEL_INFO: Record<PlayLevel, { name: string; aim: string }> = {
   beginner: { name: 'Beginner', aim: 'Keep the ball in play and take no risks.' },
   advanced: { name: 'Advanced', aim: 'Take the initiative whenever the ball lets you.' },
+  all: { name: 'Every level', aim: 'The same at every level.' },
 };
 
 export interface Play {
-  level: Level;
+  level: PlayLevel;
   entry: CollectionEntry<'plays'>;
   sceneName: string;
-  scene: Scene;
+  scene: Scene | ChapteredScene;
 }
 
 export interface Topic {
   entry: CollectionEntry<'topics'>;
   url: string;
-  plays: Record<Level, Play>;
+  /** One play for every level, or a Beginner play and an Advanced play, in that order. */
+  plays: Play[];
 }
 
 /**
@@ -44,20 +48,29 @@ export async function getTopics(): Promise<Topic[]> {
   for (const play of plays) {
     const topicId = play.id.slice(0, play.id.lastIndexOf('.'));
     const level = play.id.slice(topicId.length + 1);
-    if (!(LEVELS as readonly string[]).includes(level))
-      problems.push(`src/content/plays/${play.id}.md should end in .${LEVELS.join('.md or .')}.md.`);
+    if (![...LEVELS, 'all'].includes(level))
+      problems.push(`src/content/plays/${play.id}.md should end in .beginner.md, .advanced.md, or .all.md for one play for every level.`);
     else if (!topics.some((t) => t.id === topicId))
       problems.push(`src/content/plays/${play.id}.md has no topic. Add src/content/topics/${topicId}.md.`);
   }
 
   const result: Topic[] = [];
   for (const entry of topics) {
-    const found: Partial<Record<Level, Play>> = {};
-    for (const level of LEVELS) {
+    const has = (level: PlayLevel) => plays.some((p) => p.id === `${entry.id}.${level}`);
+    let levels: readonly PlayLevel[] = LEVELS;
+    if (has('all')) {
+      levels = ['all'];
+      if (LEVELS.some(has))
+        problems.push(
+          `"${entry.data.title}" has a play for every level (src/content/plays/${entry.id}.all.md) and a play for one level. Keep one or the other.`,
+        );
+    }
+    const found: Play[] = [];
+    for (const level of levels) {
       const id = `${entry.id}.${level}`;
       const play = plays.find((p) => p.id === id);
       if (!play) {
-        problems.push(`"${entry.data.title}" has no ${level} play. Add src/content/plays/${id}.md.`);
+        problems.push(`"${entry.data.title}" has no ${level} play. Add src/content/plays/${id}.md, or ${entry.id}.all.md for one play for every level.`);
         continue;
       }
       const sceneName = play.data.scene ?? id;
@@ -66,10 +79,9 @@ export async function getTopics(): Promise<Topic[]> {
         problems.push(`src/content/plays/${id}.md needs the scene "${sceneName}", which isn't listed in src/scenes/index.ts.`);
         continue;
       }
-      found[level] = { level, entry: play, sceneName, scene };
+      found.push({ level, entry: play, sceneName, scene });
     }
-    if (found.beginner && found.advanced && (showDrafts || !entry.data.draft))
-      result.push({ entry, url: `/situations/${entry.id}`, plays: { beginner: found.beginner, advanced: found.advanced } });
+    if (found.length === levels.length && (showDrafts || !entry.data.draft)) result.push({ entry, url: `/situations/${entry.id}`, plays: found });
   }
 
   if (problems.length) throw new Error(`The topics don't line up:\n- ${problems.join('\n- ')}`);
@@ -80,7 +92,7 @@ export async function getTopics(): Promise<Topic[]> {
 export async function testSceneNames(): Promise<string[]> {
   if (showDrafts) return Object.keys(scenes);
   const topics = await getTopics();
-  return topics.flatMap((topic) => LEVELS.map((level) => topic.plays[level].sceneName));
+  return topics.flatMap((topic) => topic.plays.map((play) => play.sceneName));
 }
 
 /** Every path, with each step linked to its topic if this build shows it. A path that names a missing topic stops the build. */

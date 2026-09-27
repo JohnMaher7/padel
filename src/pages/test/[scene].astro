@@ -1,8 +1,9 @@
 ---
 // Test page for one scene: /test/<scene name>.
 // Add ?t=4.1 to freeze on a moment, or ?speed=0.5 to start at half speed.
+// In a chaptered scene, t is on the whole animation's clock.
 import Test from '../../layouts/Test.astro';
-import { ballPath } from '../../engine/ball';
+import { timeline } from '../../engine/sample';
 import { testSceneNames } from '../../lib/topics';
 import { scenes } from '../../scenes';
 
@@ -13,7 +14,11 @@ export async function getStaticPaths() {
 const name = Astro.params.scene!;
 const scene = scenes[name]!;
 const level = name.split('.').at(-1);
-const events = ballPath(scene).events;
+const tl = timeline(scene);
+const events = tl.chapters.flatMap((c, i) =>
+  c.ball.events.map((e) => ({ ...e, t: c.start + e.t, chapter: tl.chaptered ? i + 1 : null })),
+);
+const shots = tl.chapters.reduce((n, c) => n + c.scene.shots.length, 0);
 const label = (e: (typeof events)[number]) =>
   e.kind === 'hit' ? `${e.by} hits` : e.kind === 'floor' ? 'Floor bounce' : `${e.kind === 'glass' ? 'Glass' : 'Mesh'}, ${e.wall} wall`;
 ---
@@ -27,14 +32,15 @@ const label = (e: (typeof events)[number]) =>
     <div data-scene={name}></div>
     <details>
       <summary>What the engine worked out</summary>
-      <p>The scene data lists {scene.shots.length} shots. The engine worked out every bounce from them.</p>
+      <p>The scene data lists {shots} shots. The engine worked out every bounce from them.</p>
       <table>
-        <thead><tr><th>Time</th><th>Event</th><th>x</th><th>y</th><th>Height</th></tr></thead>
+        <thead><tr><th>Time</th>{tl.chaptered && <th>Ch.</th>}<th>Event</th><th>x</th><th>y</th><th>Height</th></tr></thead>
         <tbody>
           {
             events.map((e) => (
               <tr class={e.kind === 'hit' ? 'hit' : ''}>
                 <td>{e.t.toFixed(2)} s</td>
+                {tl.chaptered && <td>{e.chapter}</td>}
                 <td>{label(e)}</td>
                 <td>{e.at[0].toFixed(1)}</td>
                 <td>{e.at[1].toFixed(1)}</td>
