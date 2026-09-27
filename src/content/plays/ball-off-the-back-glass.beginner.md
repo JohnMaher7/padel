@@ -5,7 +5,7 @@ shots: [Lob]
 
 With both of them at the net, a lob is the safe answer. It's the one shot that also pushes them back, and it gives the point a fresh start.
 
-Turn, back off out of the ball's path, and let it come off the glass and drop to about waist height. Then lob it cross-court, the longest line on the court, high enough to clear the player at the net and deep enough to land between their service line and back glass. If it helps with the timing, say it in your head: bounce, glass, hit.
+Turn, back off out of the ball's path, and let it come off the glass and drop to about waist height. Then lob it cross-court, the longest line on the court, high enough to clear the player at the net and deep enough to land between their service line and back glass. If it helps with the timing, say it in your head: bounce, glass, hit. Once the lob is clearly over them, they have to turn and chase it, and you can move up to the net together.
 
 ### Watch out for
 
