@@ -7,3 +7,6 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Copies of the repo that agents work in, in parallel
+.claude/worktrees/
