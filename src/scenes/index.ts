@@ -7,6 +7,8 @@ import opponentsLobYouAdvanced from './opponents-lob-you.advanced';
 import opponentsLobYouBeginner from './opponents-lob-you.beginner';
 import returningServeAdvanced from './returning-serve.advanced';
 import returningServeBeginner from './returning-serve.beginner';
+import whenToTakeTheNetAdvanced from './when-to-take-the-net.advanced';
+import whenToTakeTheNetBeginner from './when-to-take-the-net.beginner';
 import whereToStand from './where-to-stand.all';
 
 export const scenes: Record<string, Scene | ChapteredScene> = {
@@ -16,5 +18,7 @@ export const scenes: Record<string, Scene | ChapteredScene> = {
   'opponents-lob-you.advanced': opponentsLobYouAdvanced,
   'returning-serve.beginner': returningServeBeginner,
   'returning-serve.advanced': returningServeAdvanced,
+  'when-to-take-the-net.beginner': whenToTakeTheNetBeginner,
+  'when-to-take-the-net.advanced': whenToTakeTheNetAdvanced,
   'where-to-stand.all': whereToStand,
 };
