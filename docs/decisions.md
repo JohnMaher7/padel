@@ -6,7 +6,7 @@ The single source of truth for what this project is, what's settled and what's n
 
 Milestone 7 turns the site into an organised library and completes the launch set. Do the parts in this order. Each topic goes through the `new-topic` skill on its own branch, gets checked by the owner on the preview, and is merged to `main`.
 
-1. **The organised library** (see "Start here" below). A path file, the path strip on each topic, and a home page that leads with "Start here". Build it first, so that every new topic lands in its place. Steps that aren't published yet show as "coming soon" and aren't links.
+1. **The organised library** (see "Start here" below). A path file, the path strip on each topic, and a home page that leads with "Start here". Build it first, so that every new topic lands in its place. Steps that aren't published yet show as "coming soon" and aren't links. *Built on 2026-09-27 on the branch `library/start-here`. It merges to `main` once the owner has checked it on the preview.*
 2. **Engine work for "Where to stand"** (see its section): chapters, a decision moment per chapter, highlighted landmarks, mesh posts drawn on the court, and a topic with one play for all levels. Then write the topic.
 3. **The rest of Start here**, in path order: Ball off the back glass, When to take the net, Hitting down the middle.
 4. **The shot pages**: Lob, Volley, Bandeja, Chiquita (see "Shot pages").
@@ -31,7 +31,8 @@ A library of padel tactics and shots, taught through short top-down animations t
 
 ### "Start here": the front door (chosen 2026-09-26)
 
-- **Topics are songs, and a path is a playlist.** A path is one file listing topics in order. It adds no content and never copies a topic. Each topic still stands on its own, because search visitors land straight on it.
+- **Topics are songs, and a path is a playlist.** A path is one file listing topics in order (`src/content/paths/<path>.yaml`). It adds no content and never copies a topic. Each topic still stands on its own, because search visitors land straight on it.
+- **A step that isn't written yet** has a `soon:` name in the path file and shows as "coming soon", without a link. Once the topic's file exists, its own title is used and the `soon:` line has to go; the build stops until it does. A draft topic shows as coming soon on the live site and as a link on previews.
 - **Start here follows one point from start to finish** ("a padel point in six moments"):
   1. Where to stand at the start of a point
   2. Returning serve
@@ -39,9 +40,9 @@ A library of padel tactics and shots, taught through short top-down animations t
   4. When to take the net
   5. Hitting down the middle
   6. Opponents lob you
-- **Each topic in a path shows where it sits**, e.g. "Start here · 5 of 6", with previous and next links and a link to step 1. That's what turns a search visitor into someone following the path.
-- **The home page leads with "New to padel? Start here".** The court map and the list come after it, as "or jump to a moment".
-- **Progress ticks:** a topic counts as watched once its animation reaches the end. The tick is kept in the browser, like the level choice, so there are no accounts.
+- **Each topic in a path shows where it sits**, e.g. "Start here · 5 of 6", with previous and next links and a link to step 1. That's what turns a search visitor into someone following the path. As built (2026-09-27), the strip at the top says where you are: the position, and a bar for each step that links to it once it's published and fills in once it's watched. The end of the page says where to go: the next step, then links to the previous step, step 1 and all the steps.
+- **The home page leads with "New to padel? Start here".** The steps are stops on a line, and a button leads to the first published one. The court map and the list come after it, as "or jump to a moment".
+- **Progress ticks:** a topic counts as watched once either level's animation plays to the end. Jumping to the end while it's paused doesn't count. The tick is kept in the browser, like the level choice, so there are no accounts. Once some steps are ticked, the home page's button becomes "Carry on with step n", the first published step not yet watched.
 - A later **"Next level"** path will hold Both teams at the net, serving formations (Australian, I-formation) and the Advanced tabs.
 
 ### "Where to stand at the start of a point" (chosen 2026-09-26)
@@ -65,7 +66,7 @@ The visual style is "Broadcast" (chosen 2026-09-24): a drone camera over a real 
 - **Ball:** yellow, with a trail and a shadow. The further the shadow is from the ball, the higher the ball. Above 2.2 m a chip shows its height. A floor bounce shows as a ring, and a glass hit as a flash.
 - **Caption bar** under the court, never over it, showing "Step n of N". At the decision moment the animation stops, the bar turns yellow, and play becomes "Continue".
 - **Controls:** play and pause, replay, 0.5×, and a progress bar with the decision marked.
-- **Site look:** the court itself. Text sits on "line white" paper and animations on blue turf. The level switch is drawn as the two service boxes. Orange only ever means your team, and yellow only ever means the decision. Headings are in Barlow Condensed and text in Barlow. Dark mode follows the phone's setting.
+- **Site look:** the court itself. Text sits on "line white" paper and animations on blue turf. The level switch is drawn as the two service boxes. Orange only ever means your team, and yellow only ever means the decision. Turf blue also marks how far along a path you are. Headings are in Barlow Condensed and text in Barlow. Dark mode follows the phone's setting.
 - **The quality bar is high.** Unclear or ugly scenes mean people don't come back.
 
 ## How it's built
@@ -105,6 +106,7 @@ The stack is **Astro** (a static site), **GSAP** (the playback clock only), **Ty
   - `src/scenes/<topic>.<level>.ts`: each level's animation.
 
   `src/lib/topics.ts` stops the build if these don't line up.
+- **A path** is one more file, `src/content/paths/<path>.yaml`, and `src/lib/paths.ts` stops the build if it names a topic that doesn't exist, keeps a `soon:` line for one that does, or lists a topic twice.
 - **URLs:** situations are at `/situations/<topic>`, and shots will be at `/shots/<topic>`. There's no trailing slash. Until shot pages exist, a play names its shots without linking them.
 - **Drafts** (`draft: true`) show in `npm run dev` and on a branch's preview address, never on the live site. `src/lib/topics.ts` decides this from `WORKERS_CI_BRANCH`, and a build without it counts as live. Test pages exist only for scenes that can be shown. The repo is public, so anyone can read a draft's Markdown on GitHub.
 - **The level is remembered** in the reader's browser across topics, and `#advanced` on a link opens that tab.

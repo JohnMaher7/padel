@@ -1,0 +1,22 @@
+# The "Start here" path: one padel point, from start to finish.
+#
+# A path is a playlist. It lists topics in order and adds nothing else, so
+# every topic still stands on its own for someone who lands on it from search.
+#
+# `soon` is the name to show while a topic isn't written yet. Delete the line
+# once src/content/topics/<topic>.md exists: from then on the topic's own title
+# is used, and the build stops if the line is still here.
+
+title: Start here
+summary: Follow one point from start to finish, in six moments.
+steps:
+  - topic: where-to-stand
+    soon: Where to stand at the start of a point
+  - topic: returning-serve
+  - topic: ball-off-the-back-glass
+    soon: Ball off the back glass
+  - topic: when-to-take-the-net
+    soon: When to take the net
+  - topic: hitting-down-the-middle
+    soon: Hitting down the middle
+  - topic: opponents-lob-you

@@ -7,6 +7,8 @@
 //
 // src/lib/topics.ts checks that the three line up, so a missing play or scene
 // fails the build.
+//
+// A path lists topics in order, like a playlist: src/content/paths/start-here.yaml.
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -43,4 +45,24 @@ const plays = defineCollection({
   }),
 });
 
-export const collections = { topics, plays };
+/** src/lib/paths.ts checks that every step names a real topic, or has a "soon" name until it's written. */
+const paths = defineCollection({
+  loader: glob({ pattern: '*.yaml', base: './src/content/paths' }),
+  schema: z.object({
+    title: z.string(),
+    /** One sentence under the title on the home page. */
+    summary: z.string(),
+    steps: z
+      .array(
+        z.object({
+          /** The topic's file name, without .md. */
+          topic: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'a topic name is lower case words joined by hyphens'),
+          /** The name to show until the topic is written. Delete it once the topic's file exists. */
+          soon: z.string().optional(),
+        }),
+      )
+      .min(2),
+  }),
+});
+
+export const collections = { topics, plays, paths };

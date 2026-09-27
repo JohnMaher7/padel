@@ -5,6 +5,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { Scene } from '../engine/types';
 import { scenes } from '../scenes';
+import { placeIn, resolvePath, type Path, type Place, type ShownTopic } from './paths';
 
 export const LEVELS = ['beginner', 'advanced'] as const;
 export type Level = (typeof LEVELS)[number];
@@ -80,4 +81,22 @@ export async function testSceneNames(): Promise<string[]> {
   if (showDrafts) return Object.keys(scenes);
   const topics = await getTopics();
   return topics.flatMap((topic) => LEVELS.map((level) => topic.plays[level].sceneName));
+}
+
+/** Every path, with each step linked to its topic if this build shows it. A path that names a missing topic stops the build. */
+export async function getPaths(): Promise<Path[]> {
+  const [entries, shown, files] = await Promise.all([getCollection('topics'), getTopics(), getCollection('paths')]);
+  const written = entries.map((e) => ({ id: e.id, title: e.data.title }));
+  const live = new Map<string, ShownTopic>(
+    shown.map((t) => [t.entry.id, { url: t.url, summary: t.entry.data.summary, draft: t.entry.data.draft }]),
+  );
+  const problems: string[] = [];
+  const paths = files.map((file) => resolvePath(file.id, file.data, written, live, problems));
+  if (problems.length) throw new Error(`The paths don't line up:\n- ${problems.join('\n- ')}`);
+  return paths;
+}
+
+/** Every path a topic is in, and where it sits in each. */
+export function placesOf(paths: readonly Path[], topic: string): Place[] {
+  return paths.flatMap((path) => placeIn(path, topic) ?? []);
 }

@@ -9,6 +9,7 @@ import CourtMark from './CourtMark.astro';
     <span>{SITE.name}</span>
   </a>
   <nav aria-label="Main">
+    <a href="/#start-here">Start here</a>
     <a href="/#situations">Situations</a>
   </nav>
 </header>
@@ -29,6 +30,10 @@ import CourtMark from './CourtMark.astro';
     font: 700 23px/1 var(--display);
     letter-spacing: 0.01em;
   }
+  nav {
+    display: flex;
+    gap: 18px;
+  }
   nav a {
     font: 600 17px/1 var(--text);
     text-decoration: none;
@@ -37,5 +42,23 @@ import CourtMark from './CourtMark.astro';
   nav a:hover {
     text-decoration: underline;
     text-decoration-color: var(--kit);
+  }
+  .brand,
+  nav a {
+    white-space: nowrap;
+  }
+  /* The smallest phones (320 px wide) need a little less of everything to keep it on one line. */
+  @media (max-width: 359px) {
+    .site-head,
+    nav {
+      gap: 10px;
+    }
+    .brand {
+      gap: 7px;
+      font-size: 20px;
+    }
+    nav a {
+      font-size: 15px;
+    }
   }
 </style>

@@ -1,0 +1,113 @@
+---
+// The strip at the top of a topic that's in a path: "Start here · 2 of 6",
+// with one bar per step. It's what tells a reader who arrived from search that
+// this topic is one step of something longer. Each bar links to its step once
+// that step is published, and fills in once the reader has watched it.
+import type { Place } from '../lib/paths';
+
+interface Props {
+  place: Place;
+}
+const { path, step: here } = Astro.props.place;
+const total = path.steps.length;
+---
+
+<nav class="strip" aria-label={path.title}>
+  <p class="where">
+    <a href={`/#${path.id}`}>{path.title}</a>
+    <span class="of">· {here.n} of {total}</span>
+    <span class="seen" data-watch={here.topic}>Watched</span>
+  </p>
+  <ol class="bar">
+    {
+      path.steps.map((s) => {
+        const name = `Step ${s.n}: ${s.title}${s === here ? ', this page' : s.shown ? '' : ', coming soon'}`;
+        return (
+          <li>
+            {s.shown && s !== here ? (
+              <a class="seg" href={s.shown.url} data-watch={s.topic} title={s.title}>
+                <span class="visually-hidden">{name}</span>
+              </a>
+            ) : (
+              <span class:list={['seg', { soon: !s.shown, here: s === here }]} aria-current={s === here ? 'step' : undefined}>
+                <span class="visually-hidden">{name}</span>
+              </span>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .strip {
+    max-width: 30em;
+    margin-bottom: 18px;
+  }
+  .where {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font: 700 17px/1 var(--display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .where a {
+    text-decoration: none;
+    color: var(--turf-ink);
+  }
+  .where a:hover {
+    text-decoration: underline;
+  }
+  .of {
+    color: var(--ink-soft);
+  }
+  .seen {
+    display: none;
+    margin-left: auto;
+    color: var(--turf-ink);
+  }
+  .seen::before {
+    content: '✓ ';
+  }
+  .seen[data-watched] {
+    display: inline;
+  }
+  .bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin-top: 4px;
+  }
+  /* A tall target to tap, drawn as a thin bar. */
+  .seg {
+    display: block;
+    height: 24px;
+    position: relative;
+  }
+  .seg::before {
+    content: '';
+    position: absolute;
+    inset: 9px 0;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--turf) 30%, transparent);
+  }
+  a.seg:hover::before {
+    background: color-mix(in srgb, var(--turf) 55%, transparent);
+  }
+  .seg[data-watched]::before {
+    background: var(--turf);
+  }
+  /* Dashed, like a "coming soon" stop on the home page. Round spaces the dashes so none is cut off at the end. */
+  .seg.soon::before {
+    background: linear-gradient(90deg, var(--rule) 0 7px, transparent 7px) 0 0 / 11px 100% round;
+  }
+  .seg.here::before {
+    inset: 7px 0;
+    background: var(--ink);
+  }
+</style>

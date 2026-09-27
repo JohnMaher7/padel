@@ -1,11 +1,19 @@
 ---
+// The front door. It leads with the "Start here" path, one point from start
+// to finish, for someone new. The court map and the list come after it, for
+// someone who knows which moment they want.
 import CourtMap from '../components/CourtMap.astro';
+import PathStop from '../components/PathStop.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import Base from '../layouts/Base.astro';
-import { getTopics } from '../lib/topics';
+import { getPaths, getTopics } from '../lib/topics';
 
-const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situation');
+const [topics, paths] = await Promise.all([getTopics(), getPaths()]);
+const situations = topics.filter((t) => t.entry.data.kind === 'situation');
+const start = paths.find((p) => p.id === 'start-here');
+if (!start) throw new Error('The home page leads with the "Start here" path. Add src/content/paths/start-here.yaml.');
+const first = start.steps.find((s) => s.shown);
 ---
 
 <Base>
@@ -15,24 +23,54 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
       <section class="intro">
         <h1>Padel situations, played&nbsp;out.</h1>
         <p>
-          Pick a moment from a match. A short animation shows the right play at your level, and stops at the moment you have to decide.
+          Short animations of the moments in a match. Each shows the right play at your level, and stops at the moment you have to decide.
         </p>
       </section>
 
-      <div class="map-slot">
-        <CourtMap topics={situations} />
-      </div>
+      <section class="start" id={start.id} aria-labelledby="start-h">
+        <h2 id="start-h"><span class="kicker">New to padel?</span> {start.title}</h2>
+        <p class="lede">{start.summary}</p>
+        <ol class="path">
+          {
+            start.steps.map((step) => (
+              <li data-n={step.n} data-title={step.title} data-url={step.shown?.url} data-topic={step.shown && step.topic}>
+                <PathStop step={step} />
+              </li>
+            ))
+          }
+        </ol>
+        {
+          first && (
+            <a class="go" href={first.shown!.url} data-go>
+              <span class="go-label" data-go-label>
+                Start with step {first.n}
+              </span>
+              <span class="go-title" data-go-title>
+                {first.title}
+              </span>
+            </a>
+          )
+        }
+        <p class="done" data-done hidden>You've watched every step so far. The rest are on the way.</p>
+      </section>
 
-      <section class="list" id="situations" aria-labelledby="situations-h">
-        <h2 id="situations-h">Situations</h2>
+      <section class="jump" id="situations" aria-labelledby="jump-h">
+        <h2 id="jump-h">Or jump to a moment</h2>
+        <div class="map-slot">
+          <CourtMap topics={situations} />
+        </div>
         {
           situations.length ? (
-            <ul>
+            <ul class="list">
               {situations.map((t) => (
                 <li>
-                  <a href={t.url}>
-                    <span class="name">{t.entry.data.title}</span>
+                  <a href={t.url} data-watch={t.entry.id}>
+                    <span class="name">
+                      {t.entry.data.title}
+                      <span class="tick" aria-hidden="true" />
+                    </span>
                     <span class="sum">{t.entry.data.summary}</span>
+                    <span class="watched-note visually-hidden">You've watched this one.</span>
                   </a>
                   {t.entry.data.draft && <span class="draft">Draft</span>}
                 </li>
@@ -48,6 +86,28 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
   </div>
 </Base>
 
+<script>
+  import { onShow, showTicks, watched } from '../lib/watched';
+
+  // Once the reader has watched some of the path, the button offers the first step they haven't.
+  const go = document.querySelector<HTMLAnchorElement>('[data-go]');
+  const done = document.querySelector<HTMLElement>('[data-done]')!;
+  const live = [...document.querySelectorAll<HTMLElement>('.path li[data-url]')];
+
+  onShow(() => {
+    showTicks();
+    const seen = watched();
+    if (!go || !live.some((li) => seen.has(li.dataset.topic!))) return;
+    const next = live.find((li) => !seen.has(li.dataset.topic!));
+    go.hidden = !next;
+    done.hidden = !!next;
+    if (!next) return;
+    go.href = next.dataset.url!;
+    go.querySelector('[data-go-label]')!.textContent = `Carry on with step ${next.dataset.n}`;
+    go.querySelector('[data-go-title]')!.textContent = next.dataset.title!;
+  });
+</script>
+
 <style>
   .home {
     max-width: 1180px;
@@ -56,7 +116,7 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
   }
   main {
     display: grid;
-    gap: 32px;
+    gap: 40px;
     padding: 24px 0 56px;
   }
   h1 {
@@ -75,18 +135,111 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
     font: 700 32px/1 var(--display);
     margin-bottom: 8px;
   }
-  ul {
+
+  /* ---- Start here ---- */
+  .start {
+    border-top: 3px solid var(--ink);
+    padding-top: 18px;
+  }
+  .start h2 {
+    font-size: 46px;
+    line-height: 0.95;
+    margin-bottom: 10px;
+  }
+  .kicker {
+    display: block;
+    font: 700 19px/1 var(--display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--turf-ink);
+    margin-bottom: 8px;
+  }
+  .lede {
+    font-size: 19px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    max-width: 26em;
+  }
+  .path {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+  }
+  /* The line between the stops. A stop's marker is 36 px, 12 px below the top of its row. */
+  .path li {
+    position: relative;
+  }
+  .path li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 48px;
+    bottom: -12px;
+    width: 2px;
+    background: var(--rule);
+  }
+  .go {
+    display: inline-grid;
+    gap: 4px;
+    margin-top: 16px;
+    padding: 14px 22px 14px 18px;
+    background: var(--turf);
+    color: var(--line);
+    border-radius: 2px;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgb(16 35 56 / 0.18);
+  }
+  .go:hover {
+    background: #2d72bb;
+    color: var(--line);
+  }
+  .go[hidden] {
+    display: none;
+  }
+  .go-label {
+    font: 600 14px/1 var(--display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+  .go-title {
+    font: 700 27px/1.05 var(--display);
+  }
+  .go-title::after {
+    content: '';
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-left: 10px;
+    border-top: 3px solid currentColor;
+    border-right: 3px solid currentColor;
+    transform: translateY(-3px) rotate(45deg);
+  }
+  .done {
+    margin-top: 16px;
+    color: var(--ink-soft);
+  }
+
+  /* ---- Or jump to a moment ---- */
+  .jump {
+    display: grid;
+    gap: 20px;
+  }
+  .jump h2 {
+    margin-bottom: 0;
+  }
+  .list {
     list-style: none;
     padding: 0;
   }
-  li {
+  .list li {
     position: relative;
     border-top: 1px solid var(--rule);
   }
-  li:last-child {
+  .list li:last-child {
     border-bottom: 1px solid var(--rule);
   }
-  li a {
+  .list a {
     display: grid;
     gap: 4px;
     padding: 16px 0 18px;
@@ -95,8 +248,26 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
   .name {
     font: 700 28px/1.05 var(--display);
   }
-  li a:hover .name {
+  .list a:hover .name {
     color: var(--kit-ink);
+  }
+  .tick {
+    display: none;
+  }
+  [data-watched] .tick {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    margin-left: 12px;
+    border-right: 3px solid var(--turf-ink);
+    border-bottom: 3px solid var(--turf-ink);
+    transform: translateY(-4px) rotate(40deg);
+  }
+  .watched-note {
+    display: none;
+  }
+  [data-watched] .watched-note {
+    display: block;
   }
   .sum {
     color: var(--ink-soft);
@@ -124,16 +295,30 @@ const situations = (await getTopics()).filter((t) => t.entry.data.kind === 'situ
     .home {
       padding: 0 clamp(24px, 4vw, 56px);
     }
-    main {
+    main,
+    .jump {
       grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
-      grid-template-areas: 'intro map' 'list map';
-      grid-template-rows: auto 1fr;
       column-gap: clamp(40px, 6vw, 96px);
-      row-gap: 48px;
+    }
+    main {
+      grid-template-areas: 'intro start' 'jump jump';
+      row-gap: 72px;
       padding-top: 56px;
     }
     .intro {
       grid-area: intro;
+    }
+    .start {
+      grid-area: start;
+    }
+    .jump {
+      grid-area: jump;
+      grid-template-areas: 'h map' 'list map';
+      grid-template-rows: auto 1fr;
+      row-gap: 16px;
+    }
+    .jump h2 {
+      grid-area: h;
     }
     .map-slot {
       grid-area: map;

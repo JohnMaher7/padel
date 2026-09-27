@@ -1,7 +1,7 @@
 /*
  * The site's look, taken from the court itself: text sits on "line white"
  * paper, animations sit on the turf, and every colour means one thing.
- *   turf    the court; where you watch
+ *   turf    the court; where you watch, and how far along a path you are
  *   kit     our team's shirts: you and your partner
  *   decide  the decision moment, and nothing else
  * The scene player keeps its own always-dark TV look (engine/render/broadcast.css).
@@ -15,6 +15,7 @@
   --turf: #2663a4;
   --turf-band: #2a6aae;
   --turf-deep: #13243a;
+  --turf-ink: #2663a4;
   --line: #f4f7fa;
   --kit: #ff7a2f;
   --kit-ink: #b0460b;
@@ -34,6 +35,7 @@
     --ink-soft: #9db0c3;
     --rule: #22364b;
     --kit-ink: #ff9d63;
+    --turf-ink: #7fb4f0;
     --focus: #8cc2ff;
     color-scheme: dark;
   }

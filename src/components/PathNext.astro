@@ -1,0 +1,61 @@
+---
+// The end of a topic that's in a path: what comes next, the way back, and the
+// whole path. The strip at the top says where you are; this says where to go.
+import type { Place } from '../lib/paths';
+import PathStop from './PathStop.astro';
+
+interface Props {
+  place: Place;
+}
+const { path, step, prev, next } = Astro.props.place;
+const first = path.steps[0]!;
+---
+
+<section class="path-next" aria-labelledby={`${path.id}-next-h`}>
+  <h2 id={`${path.id}-next-h`}>{path.title} <span>· {step.n} of {path.steps.length}</span></h2>
+  {
+    next ? (
+      <PathStop step={next} label="Next" />
+    ) : (
+      <p class="end">That's the last step.</p>
+    )
+  }
+  <ul class="more">
+    {prev?.shown && <li><a href={prev.shown.url}>Previous: {prev.title}</a></li>}
+    {step.n > 2 && first.shown && <li><a href={first.shown.url}>Back to step 1: {first.title}</a></li>}
+    <li><a href={`/#${path.id}`}>See all {path.steps.length} steps</a></li>
+  </ul>
+</section>
+
+<style>
+  .path-next {
+    max-width: 36em;
+    padding: 22px 0 8px;
+    border-top: 3px solid var(--ink);
+  }
+  h2 {
+    font: 700 17px/1 var(--display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--turf-ink);
+    margin-bottom: 6px;
+  }
+  h2 span {
+    color: var(--ink-soft);
+  }
+  .end {
+    padding: 12px 0 4px;
+    font: 700 25px/1.05 var(--display);
+  }
+  .more {
+    list-style: none;
+    padding: 6px 0 0;
+    display: grid;
+    gap: 2px;
+  }
+  .more a {
+    display: inline-block;
+    padding: 8px 0;
+    font-weight: 500;
+  }
+</style>

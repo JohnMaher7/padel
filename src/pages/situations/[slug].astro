@@ -5,18 +5,23 @@
 // On a phone everything is one column: advice, the court, then the play.
 // On a laptop the court stays in view on the right while you read on the left.
 import { render } from 'astro:content';
+import PathNext from '../../components/PathNext.astro';
+import PathStrip from '../../components/PathStrip.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import Base from '../../layouts/Base.astro';
 import { stepsOf } from '../../lib/steps';
-import { getTopics, LEVEL_INFO, LEVELS, type Topic } from '../../lib/topics';
+import type { Place } from '../../lib/paths';
+import { getPaths, getTopics, LEVEL_INFO, LEVELS, placesOf, type Topic } from '../../lib/topics';
 
 export async function getStaticPaths() {
-  const topics = await getTopics();
-  return topics.filter((t) => t.entry.data.kind === 'situation').map((topic) => ({ params: { slug: topic.entry.id }, props: { topic } }));
+  const [topics, paths] = await Promise.all([getTopics(), getPaths()]);
+  return topics
+    .filter((t) => t.entry.data.kind === 'situation')
+    .map((topic) => ({ params: { slug: topic.entry.id }, props: { topic, places: placesOf(paths, topic.entry.id) } }));
 }
 
-const { topic } = Astro.props as { topic: Topic };
+const { topic, places } = Astro.props as { topic: Topic; places: Place[] };
 const { title, summary, draft } = topic.entry.data;
 const { Content: Advice } = await render(topic.entry);
 const plays = await Promise.all(
@@ -29,7 +34,7 @@ const plays = await Promise.all(
 ---
 
 <Base title={title} description={summary}>
-  <div class="topic">
+  <div class="topic" data-topic={topic.entry.id}>
     <div class="read">
       <SiteHeader />
       {
@@ -41,7 +46,15 @@ const plays = await Promise.all(
         )
       }
       <header class="topic-head">
-        <p class="crumb"><a href="/#situations">Situations</a></p>
+        {
+          places.length ? (
+            places.map((place) => <PathStrip place={place} />)
+          ) : (
+            <p class="crumb">
+              <a href="/#situations">Situations</a>
+            </p>
+          )
+        }
         <h1>{title}</h1>
         <p class="summary">{summary}</p>
       </header>
@@ -126,6 +139,15 @@ const plays = await Promise.all(
           </section>
         ))
       }
+      {
+        places.length > 0 && (
+          <div class="next">
+            {places.map((place) => (
+              <PathNext place={place} />
+            ))}
+          </div>
+        )
+      }
     </div>
 
     <div class="foot"><SiteFooter /></div>
@@ -136,18 +158,28 @@ const plays = await Promise.all(
   import { playScene } from '../../engine';
   import { captionAt } from '../../engine/sample';
   import { scenes } from '../../scenes';
+  import { markWatched, onShow, showTicks } from '../../lib/watched';
 
   type Level = 'beginner' | 'advanced';
   const html = document.documentElement;
   const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-level-tab]')];
   const players = new Map<Level, ReturnType<typeof playScene>>();
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const topicId = document.querySelector<HTMLElement>('[data-topic]')!.dataset.topic!;
+  onShow(showTicks);
 
   for (const stage of document.querySelectorAll<HTMLElement>('[data-stage]')) {
     const level = stage.dataset.stage as Level;
     const scene = scenes[stage.dataset.scene!]!;
     const player = playScene(stage, scene);
     players.set(level, player);
+
+    // Playing either level's animation to the end ticks the topic as watched.
+    let wasPlaying = false;
+    player.playback.on((s) => {
+      if (s.ended && wasPlaying) markWatched(topicId);
+      wasPlaying = s.playing;
+    });
 
     // The step list follows the animation, and tapping a step plays from there.
     const steps = [...document.querySelectorAll<HTMLButtonElement>(`[data-steps="${level}"] .step`)];
@@ -407,6 +439,9 @@ const plays = await Promise.all(
   }
   .why {
     margin-top: 32px;
+  }
+  .next {
+    padding: 8px var(--gutter) 40px;
   }
   .shots {
     margin-top: 28px;

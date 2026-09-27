@@ -21,6 +21,7 @@ Work on a branch named `topic/<slug>`, never on `main` (a push to `main` goes li
 All three are in our own words. Never copy a sentence, and never copy anybody's animation.
 
 - `src/content/topics/<slug>.md`: `title`, `kind: situation`, a one-sentence `summary`, `draft: true`, `spot` (where it happens on our half, x 0–10, y 10–20), then 3–5 bullet points of advice for every level, each starting with a bold instruction.
+- If the topic is a step in a path (`src/content/paths/*.yaml`), delete that step's `soon:` line. The topic's own title replaces it, and the build stops until the line is gone.
 - `src/content/plays/<slug>.beginner.md` and `.advanced.md`: `play` is the right play in a few words, and `shots` lists only shots from the launch set that this play actually uses. Then why it works, and a short "Watch out for" section. Beginner means keep the ball in play and take no risks; Advanced means take the initiative.
 
 ## 3. Write the scenes

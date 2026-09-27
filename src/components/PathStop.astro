@@ -1,0 +1,123 @@
+---
+// One step of a path: a numbered stop, like a station on a line. It's a link
+// to its topic once the topic is published, and "coming soon" until then.
+// The number turns into a tick once the reader has watched the topic.
+import type { PathStep } from '../lib/paths';
+
+interface Props {
+  step: PathStep;
+  /** A few words above the title, e.g. "Next". */
+  label?: string;
+}
+const { step, label } = Astro.props;
+const Tag = step.shown ? 'a' : 'div';
+---
+
+<Tag class:list={['stop', { soon: !step.shown }]} href={step.shown?.url} data-watch={step.shown && step.topic}>
+  <span class="marker" aria-hidden="true">
+    <span class="n">{step.n}</span>
+    <svg class="tick" viewBox="0 0 20 20" width="20" height="20"><path d="M4.5 10.5l3.6 3.6 7.4-8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+  </span>
+  <span class="body">
+    {label && <span class="label">{label}</span>}
+    <span class="title">
+      {step.title}
+      {step.shown?.draft && <span class="draft">Draft</span>}
+    </span>
+    {step.shown ? <span class="sum">{step.shown.summary}</span> : <span class="soon-note">Coming soon</span>}
+    <span class="watched-note visually-hidden">You've watched this one.</span>
+  </span>
+</Tag>
+
+<style>
+  .stop {
+    --marker: 36px;
+    display: grid;
+    grid-template-columns: var(--marker) 1fr;
+    column-gap: 14px;
+    padding: 12px 0;
+    text-decoration: none;
+  }
+  .marker {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--marker);
+    height: var(--marker);
+    border: 2px solid var(--turf-ink);
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--turf-ink);
+    font: 700 21px/1 var(--display);
+  }
+  .tick {
+    display: none;
+  }
+  .soon .marker {
+    border-style: dashed;
+    border-color: var(--ink-soft);
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+  .stop[data-watched] .marker {
+    background: var(--turf);
+    border-color: var(--turf);
+    color: var(--line);
+  }
+  .stop[data-watched] .n {
+    display: none;
+  }
+  .stop[data-watched] .tick {
+    display: block;
+  }
+  .body {
+    display: grid;
+    gap: 3px;
+    align-content: start;
+    min-height: var(--marker);
+    padding-top: 5px;
+  }
+  .label {
+    font: 600 14px/1 var(--display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 3px;
+  }
+  .title {
+    font: 700 25px/1.05 var(--display);
+  }
+  a.stop:hover .title {
+    color: var(--kit-ink);
+  }
+  .soon .title {
+    color: var(--ink-soft);
+  }
+  .sum {
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .soon-note {
+    font: 600 14px/1.2 var(--display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .watched-note {
+    display: none;
+  }
+  .stop[data-watched] .watched-note {
+    display: block;
+  }
+  .draft {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 7px 2px;
+    background: var(--decide);
+    color: #3d3300;
+    font: 700 14px/1.2 var(--display);
+    border-radius: 2px;
+    vertical-align: 4px;
+  }
+</style>
