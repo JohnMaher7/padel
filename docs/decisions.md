@@ -7,7 +7,7 @@ The single source of truth for what this project is, what's settled and what's n
 Milestone 7 turns the site into an organised library and completes the launch set. Do the parts in this order. Each topic goes through the `new-topic` skill on its own branch, gets checked by the owner on the preview, and is merged to `main`.
 
 1. **The organised library** (see "Start here" below). A path file, the path strip on each topic, and a home page that leads with "Start here". Build it first, so that every new topic lands in its place. Steps that aren't published yet show as "coming soon" and aren't links. *Built on 2026-09-27 on the branch `library/start-here`. It merges to `main` once the owner has checked it on the preview.*
-2. **Engine work for "Where to stand"** (see its section): chapters, a decision moment per chapter, highlighted landmarks, mesh posts drawn on the court, and a topic with one play for all levels. Then write the topic.
+2. **Engine work for "Where to stand"** (see its section): chapters, a decision moment per chapter, highlighted landmarks, mesh posts drawn on the court, and a topic with one play for all levels. Then write the topic. *Built on 2026-09-27 on the branch `topic/where-to-stand`, on top of part 1. It merges once the owner has checked it on the preview.*
 3. **The rest of Start here**, in path order: Ball off the back glass, When to take the net, Hitting down the middle.
 4. **The shot pages**: Lob, Volley, Bandeja, Chiquita (see "Shot pages").
 5. **A name and a domain.** The owner chooses. Give the costs in euro against the cheaper options. Then: move the domain's DNS to Cloudflare, attach the domain to the Worker, delete the noindex rule from `public/_headers`, and redirect the `workers.dev` address. The working name, "Padel tactics", is set only in `src/site.ts`.
@@ -49,8 +49,9 @@ A library of padel tactics and shots, taught through short top-down animations t
 
 - **One animation with no tabs**, in four short chapters: you serve, your partner serves, they serve to you, they serve to your partner. Each chapter makes clear who's serving and which player is you. It then plays the serve and a shot or two while everyone moves to their spot.
 - **Each chapter stops on "Where do you stand?"** before the players move.
-- **Anchors:** landmarks you can see on a real court are highlighted as the caption names them. The owner's examples are standing in line with the second post at the net, and by the join in the side glass to return. Research must confirm every anchor, because post spacing varies between court makers. The glass join is 2 m from the back wall and is already drawn. The mesh posts aren't drawn yet.
-- **What the engine needs:**
+- **Anchors:** landmarks you can see on a real court are highlighted as the caption names them. The owner's examples are standing in line with the second post at the net, and by the join in the side glass to return. Research must confirm every anchor, because post spacing varies between court makers. The glass join is 2 m from the back wall and is already drawn.
+- **As researched (2026-09-27, `docs/research/where-to-stand.md`):** serving, just behind the service line in the middle of your half; your partner serving, at the net level with the second post, counting the net post as the first (about 2 m back on a court with 2 m fence panels); receiving, level with the glass join, about 2 m in from the side glass; your partner receiving, back and level with them. Because courts differ, every landmark comes with its distance. "You" play on the right throughout, so in chapter 2 your partner serves from the left.
+- **What the engine needs** (all built; see "Scenes are sheet music"):
   - **Chapters.** The ball and the players reset between them, and the progress bar and the step list mark each one, so a viewer can jump to theirs in one tap. The validator must allow the jump at a reset, when it would otherwise report it as running too fast.
   - A decision moment per chapter.
   - Timed landmark highlights.
@@ -61,11 +62,12 @@ A library of padel tactics and shots, taught through short top-down animations t
 
 The visual style is "Broadcast" (chosen 2026-09-24): a drone camera over a real indoor court.
 
-- **Court:** a vertical, top-down court that fits a phone held upright. Blue turf, white lines, and a net with a shadow. Glass at both ends and along the first 4 m of each side, with panel joints. Mesh in between.
+- **Court:** a vertical, top-down court that fits a phone held upright. Blue turf, white lines, and a net with a shadow. Glass at both ends and along the first 4 m of each side, with panel joints. Mesh in between, with posts 2 m and 4 m from the net.
 - **Players:** top-down athletes, drawn at 1.25× life size, with striding legs and a racket that swings at each hit and points at the ball at contact. Our team wears orange and the opponents wear white. "You" has a yellow YOU tag and a ring.
-- **Ball:** yellow, with a trail and a shadow. The further the shadow is from the ball, the higher the ball. Above 2.2 m a chip shows its height. A floor bounce shows as a ring, and a glass hit as a flash.
+- **Ball:** yellow, with a trail and a shadow. The further the shadow is from the ball, the higher the ball. Above 2.2 m a chip shows its height. A floor bounce shows as a ring, and a glass hit as a flash. Before a serve, the server carries the ball in their free hand, then drops it to bounce once before the hit.
 - **Caption bar** under the court, never over it, showing "Step n of N". At the decision moment the animation stops, the bar turns yellow, and play becomes "Continue".
-- **Controls:** play and pause, replay, 0.5×, and a progress bar with the decision marked.
+- **Controls:** play and pause, replay, 0.5×, and a progress bar with the decision marked. A chaptered scene adds a notch between chapters on the bar and a button for each chapter under it.
+- **Landmark highlights** are aqua, a colour of their own: a dashed line across the court at the landmark, with a ring at each side wall (the service line glows instead).
 - **Site look:** the court itself. Text sits on "line white" paper and animations on blue turf. The level switch is drawn as the two service boxes. Orange only ever means your team, and yellow only ever means the decision. Turf blue also marks how far along a path you are. Headings are in Barlow Condensed and text in Barlow. Dark mode follows the phone's setting.
 - **The quality bar is high.** Unclear or ugly scenes mean people don't come back.
 
@@ -80,9 +82,11 @@ The stack is **Astro** (a static site), **GSAP** (the playback clock only), **Ty
   - each player's route (keyframes of time, x, y and facing);
   - the shots: who hits, when, where the ball first lands, and either its `peak` or its `flight` time;
   - the captions;
-  - the decision moment.
+  - the decision moment;
+  - optionally, `highlights`: which landmark to light up (`service-line`, `glass-join`, `second-post`), at which end, and when.
 
   Only the opening shot has `from`. After that the ball is wherever physics carries it, and the hitter has to be there. The format is in `src/engine/types.ts`.
+- **A chaptered scene** (`{ title, chapters }`) plays several scenes back to back, each with its own times from 0, its own decision, and a title that says what it's about ("You serve"). The players and the ball reset between chapters, and the validator checks each chapter on its own.
 - **The engine works out the ball's path**, including every floor, glass and mesh bounce. The physics numbers are in `src/engine/court.ts`.
 - **The players** are always `you`, `partner`, `opp1` and `opp2`. The name sets the team, and our team plays at the near end (y > 10).
 - **Captions are headlines** (chosen 2026-09-26). At 1× speed each one needs 0.5 s plus 0.25 s a word before the next one starts. The last caption is exempt, because it stays up after the end. The animation never waits for a caption, and only the decision moment stops it. Put the explanation in the caption's `detail`, which shows in the step list under the animation.
@@ -96,7 +100,7 @@ The stack is **Astro** (a static site), **GSAP** (the playback clock only), **Ty
   - caption order and reading time;
   - the serve rules above;
   - a ball flying out over the walls. Relax this only when a scene needs a smash that goes out.
-- **Tools:** `npm run scene -- <name> [from-to]` prints every hit and bounce, where each hitter stands, and any problems. `/test/<name>?t=4.1` freezes a scene at a moment. A scene is done only when someone has looked at every hit and bounce at phone size, because the rules can't tell whether it reads well.
+- **Tools:** `npm run scene -- <name> [from-to]` prints every hit and bounce, where each hitter stands, and any problems. `<name>@2` reports only chapter 2, with each time within the chapter and on the page. `/test/<name>?t=4.1` freezes a scene at a moment, on the page's clock. A scene is done only when someone has looked at every hit and bounce at phone size, because the rules can't tell whether it reads well.
 
 ### Site structure
 
@@ -104,6 +108,8 @@ The stack is **Astro** (a static site), **GSAP** (the playback clock only), **Ty
   - `src/content/topics/<topic>.md`: the advice, plus `title`, `summary`, `draft`, and `spot` (where it happens on the home page map);
   - `src/content/plays/<topic>.<level>.md`: each level's play;
   - `src/scenes/<topic>.<level>.ts`: each level's animation.
+
+  A topic whose play is the same at every level has one play and no tabs: `<topic>.all.md` and `<topic>.all.ts`.
 
   `src/lib/topics.ts` stops the build if these don't line up.
 - **A path** is one more file, `src/content/paths/<path>.yaml`, and `src/lib/paths.ts` stops the build if it names a topic that doesn't exist, keeps a `soon:` line for one that does, or lists a topic twice.

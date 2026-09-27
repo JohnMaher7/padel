@@ -169,7 +169,7 @@
 /* One button per chapter under the controls: two to a row on a phone, all in one row when there's room. */
 .sp-chapters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 4px;
 }
 

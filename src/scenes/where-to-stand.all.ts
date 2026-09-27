@@ -37,7 +37,7 @@ const youServe: Scene = {
 
   captions: [
     { t: 0, text: "You're serving.", detail: 'The first point of every game is served from the right, into the box diagonally across.' },
-    { t: 1.1, text: 'Just behind the service line.', detail: 'In the middle of your half, so every part of the box you serve into is in reach.' },
+    { t: 1.1, text: 'Just behind the service line.', detail: 'In the middle of your half, with a foot behind the line and not on it.' },
     { t: 2.9, text: 'Partner: level with the second post.', detail: 'At the net in the other half, about 2 m back from it, a little towards the middle.' },
     { t: 4.9, text: 'Then follow your serve in.', detail: 'After a good serve, move up to join your partner at the net.' },
   ],
@@ -126,7 +126,7 @@ const theyServeToPartner: Scene = {
 
   captions: [
     { t: 0, text: "They're serving to your partner.", detail: 'This time their server is on the other side, and the serve goes to your partner.' },
-    { t: 1.8, text: 'Back, level with your partner.', detail: 'At the glass join too, on your side of the court. Not at the net, where their net player can volley at your feet.' },
+    { t: 1.8, text: 'Back, level with your partner.', detail: 'At the glass join too, on your side of the court. Level with each other, you can move up or back as a pair.' },
     { t: 3.6, text: 'Then move as a pair.', detail: 'Wherever the return goes, move up or back together. Never one at the net and one at the back.' },
   ],
   decision: { t: 1.8, prompt: 'Where do you stand?' },

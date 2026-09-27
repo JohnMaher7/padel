@@ -22,12 +22,15 @@ All three are in our own words. Never copy a sentence, and never copy anybody's 
 
 - `src/content/topics/<slug>.md`: `title`, `kind: situation`, a one-sentence `summary`, `draft: true`, `spot` (where it happens on our half, x 0–10, y 10–20), then 3–5 bullet points of advice for every level, each starting with a bold instruction.
 - If the topic is a step in a path (`src/content/paths/*.yaml`), delete that step's `soon:` line. The topic's own title replaces it, and the build stops until the line is gone.
+- A topic whose right play doesn't depend on the level (like "Where to stand") has one play: `<slug>.all.md` and `<slug>.all.ts`, and no tabs. Everything below that says "both levels" then means the one play.
 - `src/content/plays/<slug>.beginner.md` and `.advanced.md`: `play` is the right play in a few words, and `shots` lists only shots from the launch set that this play actually uses. Then why it works, and a short "Watch out for" section. Beginner means keep the ball in play and take no risks; Advanced means take the initiative.
 
 ## 3. Write the scenes
 
 - `src/scenes/<slug>.beginner.ts` and `.advanced.ts`, both listed in `src/scenes/index.ts`. Copy the shape of an existing scene.
 - **Build them up shot by shot** with `npm run scene -- <slug> [from-to]`. Write the opening shot, run it, read where the ball goes, put the next hitter there, and repeat. `from-to` traces the ball, which is how you find where it can be hit.
+- When one scene has to show several separate starts, make it a chaptered scene (`{ title, chapters }`, as in `where-to-stand.all.ts`). Write and report one chapter at a time with `npm run scene -- <slug>@2 [from-to]`; the report gives each time within the chapter and on the page, and the test page takes the page time.
+- To show a landmark while a caption names it, add a `highlights` entry for the same stretch of time.
 - A serve's opening shot has `serve: true`. The ball waits at `from` until the shot's `t`, so start the serve about a second in, which lets the viewer see the positions first.
 - **Captions are headlines.** At 1× speed each one needs 0.5 s plus 0.25 s a word before the next one starts. Aim for 3–5 captions and five or six words each. Put the explanation in `detail`, which shows in the step list. The animation never waits for a caption.
 - Put the decision moment where the viewer really has to choose, usually as the ball comes to "you", and have the caption that answers it start at the same time.
