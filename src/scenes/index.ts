@@ -3,6 +3,8 @@
 import type { ChapteredScene, Scene } from '../engine/types';
 import ballOffTheBackGlassAdvanced from './ball-off-the-back-glass.advanced';
 import ballOffTheBackGlassBeginner from './ball-off-the-back-glass.beginner';
+import hittingDownTheMiddleAdvanced from './hitting-down-the-middle.advanced';
+import hittingDownTheMiddleBeginner from './hitting-down-the-middle.beginner';
 import opponentsLobYouAdvanced from './opponents-lob-you.advanced';
 import opponentsLobYouBeginner from './opponents-lob-you.beginner';
 import returningServeAdvanced from './returning-serve.advanced';
@@ -21,4 +23,6 @@ export const scenes: Record<string, Scene | ChapteredScene> = {
   'when-to-take-the-net.beginner': whenToTakeTheNetBeginner,
   'when-to-take-the-net.advanced': whenToTakeTheNetAdvanced,
   'where-to-stand.all': whereToStand,
+  'hitting-down-the-middle.beginner': hittingDownTheMiddleBeginner,
+  'hitting-down-the-middle.advanced': hittingDownTheMiddleAdvanced,
 };
