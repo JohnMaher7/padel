@@ -8,11 +8,13 @@ Milestone 7 turns the site into an organised library and completes the launch se
 
 1. **The organised library** (see "Start here" below). A path file, the path strip on each topic, and a home page that leads with "Start here". Build it first, so that every new topic lands in its place. Steps that aren't published yet show as "coming soon" and aren't links. *Built on 2026-09-27 on the branch `library/start-here`. It merges to `main` once the owner has checked it on the preview.*
 2. **Engine work for "Where to stand"** (see its section): chapters, a decision moment per chapter, highlighted landmarks, mesh posts drawn on the court, and a topic with one play for all levels. Then write the topic. *Built on 2026-09-27 on the branch `topic/where-to-stand`, on top of part 1. It merges once the owner has checked it on the preview.*
-3. **The rest of Start here**, in path order: Ball off the back glass, When to take the net, Hitting down the middle.
-4. **The shot pages**: Lob, Volley, Bandeja, Chiquita (see "Shot pages").
-5. **A name and a domain.** The owner chooses. Give the costs in euro against the cheaper options. Then: move the domain's DNS to Cloudflare, attach the domain to the Worker, delete the noindex rule from `public/_headers`, and redirect the `workers.dev` address. The working name, "Padel tactics", is set only in `src/site.ts`.
+3. **The rest of Start here**, in path order: Ball off the back glass, When to take the net, Hitting down the middle. *Drafted on 2026-09-27, each on its own branch (`topic/<slug>`), waiting for the owner's check.*
+4. **The shot pages**: Lob, Volley, Bandeja, Chiquita (see "Shot pages"). *Drafted on 2026-09-27 on `shots/launch-set`, waiting for the owner's check.*
+5. **A name and a domain.** *Researched on 2026-09-27 (`docs/research/name-and-domain.md`); waiting for the owner's choice.* The owner chooses. Give the costs in euro against the cheaper options. Then: move the domain's DNS to Cloudflare, attach the domain to the Worker, delete the noindex rule from `public/_headers`, and redirect the `workers.dev` address. The working name, "Padel tactics", is set only in `src/site.ts`.
 
 Published so far: **Opponents lob you** and **Returning serve**.
+
+**The branches are a chain**, each built on the one before: `library/start-here` → `topic/where-to-stand` → `topic/ball-off-the-back-glass` → `topic/when-to-take-the-net` → `topic/hitting-down-the-middle` → `shots/launch-set`. Each has its own preview. To publish a part, set `draft: false` on its branch and merge that branch into `main`. That brings the earlier branches with it, but anything still marked as a draft stays off the live site.
 
 ## Purpose
 
@@ -113,7 +115,8 @@ The stack is **Astro** (a static site), **GSAP** (the playback clock only), **Ty
 
   `src/lib/topics.ts` stops the build if these don't line up.
 - **A path** is one more file, `src/content/paths/<path>.yaml`, and `src/lib/paths.ts` stops the build if it names a topic that doesn't exist, keeps a `soon:` line for one that does, or lists a topic twice.
-- **URLs:** situations are at `/situations/<topic>`, and shots will be at `/shots/<topic>`. There's no trailing slash. Until shot pages exist, a play names its shots without linking them.
+- **URLs:** situations are at `/situations/<topic>`, and shots are at `/shots/<shot>`. There's no trailing slash.
+- **A shot** is one file, `src/content/shots/<shot>.md`: its title, a summary, `draft`, its clips, and the words. A play names its shots by title in `shots:`, and each becomes a link once that shot's page is shown. The build stops if a play names a shot that has no file.
 - **Drafts** (`draft: true`) show in `npm run dev` and on a branch's preview address, never on the live site. `src/lib/topics.ts` decides this from `WORKERS_CI_BRANCH`, and a build without it counts as live. Test pages exist only for scenes that can be shown. The repo is public, so anyone can read a draft's Markdown on GitHub.
 - **The level is remembered** in the reader's browser across topics, and `#advanced` on a link opens that tab.
 - **The step list is built from the scene's captions**, so it can't drift from the animation. Tapping a step plays from there. It's also the text version of the animation.
@@ -144,6 +147,9 @@ Use one branch per topic (`topic/<slug>`). When a run teaches something new, upd
 
 Shot pages give written step-by-step technique plus embedded YouTube coaching clips, each set to start at the relevant moment. Side-view technique animations come later.
 
+- **As built (2026-09-27):** each page has "When to use it", "Step by step" (5–7 numbered steps), "Watch out for", two or three clips, and "Where it's the right play", which links back to every play that uses the shot. The home page lists the shots under the situations.
+- **Clips** are other coaches' YouTube videos, credited under each one. A clip is only a picture until it's tapped. Then YouTube's player loads from `youtube-nocookie.com`, starting and ending at the seconds in the file. Every start time was checked against the video's chapters or captions (`docs/research/shot-<shot>.md`).
+
 ## Milestones
 
 | # | Milestone | Status |
@@ -154,11 +160,13 @@ Shot pages give written step-by-step technique plus embedded YouTube coaching cl
 | 4 | Site skeleton, with the first topic page and tabs | done 2026-09-25 |
 | 5 | Deploy to Cloudflare | done 2026-09-26 |
 | 6 | Content pipeline, proven on "Returning serve" | done 2026-09-26 |
-| 7 | Organised library, the launch set (6 situations and 4 shots), then a name and domain | next; see the top of this file |
+| 7 | Organised library, the launch set (6 situations and 4 shots), then a name and domain | built 2026-09-27 up to part 4, on preview branches; waiting for the owner's checks and the name (part 5) |
 
 ## Open issues
 
 - **Short laptop screens lose the fixed court.** On a laptop window under 740 px tall, the court panel scrolls with the page.
+- **The validator can't see two kinds of fake.** A ball that passes through a player's body, and a second bounce after the last shot (which reads as a winner), both pass the build. Both were caught by eye while writing milestone 7's scenes. Candidates for new checks.
+- **"Opponents lob you" puts the net players about 2.8 m from the net**, a little behind the second post (2 m) that the newer topics teach. Worth moving them up the next time that scene is touched.
 
 ## Deferred (decided: not now)
 

@@ -38,9 +38,19 @@ All three are in our own words. Never copy a sentence, and never copy anybody's 
 ## 4. Check it yourself
 
 - `npm run scene -- <slug>` reports no problems, and `npm run build` passes.
+- The validator can't see a ball passing through a player, or a second bounce after the last shot (it reads as a winner). Look for both.
 - **Look at every hit and bounce** at phone size (390×844) on `/test/<slug>.<level>?t=<time>`, with times taken from the scene report. See the memory note on screenshots. Look for players the ball passes through, rackets that don't reach, players standing where the text says they shouldn't, and a height chip that contradicts the words ("a low return" at 2 m).
 - Look at `/situations/<slug>` at phone size too: the advice, both tabs and the step list.
 - Read the words against the research notes. Every claim on the page should trace back to a row in the table.
+
+## Running it as a helper, in parallel
+
+Several topics can be written at once by helpers (sub-agents), each in its own git worktree. What milestone 7 learned:
+
+- **Base the branch on the latest topic branch**, not on `main`: the path file and the engine features live there.
+- **Give the worktree its own `node_modules/` folder of links**, one per package, not a single link to the main checkout's `node_modules`. A single link shares Astro's content cache (`node_modules/.astro`), so one worktree's build reads another's content and fails with confusing errors.
+- **Commit only your own files** (`git add <paths>`, never `-A`), and don't push. The main session checks the work by eye, adds it to the chain of branches, and pushes.
+- **A research sketch's numbers can be physically impossible.** Trust `npm run scene`, not the sketch: a chiquita that stays under 2.2 m can't fly for 1.5 s.
 
 ## 5. Hand it to the owner
 
