@@ -1,0 +1,187 @@
+---
+// A shot page: when to play it, the technique step by step, coaches' clips set
+// to start at the moment that shows it, and the plays that use it.
+import { render } from 'astro:content';
+import Clip from '../../components/Clip.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import Base from '../../layouts/Base.astro';
+import { getShots, getTopics, LEVEL_INFO, playsUsing, type Shot } from '../../lib/topics';
+
+export async function getStaticPaths() {
+  const [shots, topics] = await Promise.all([getShots(), getTopics()]);
+  return shots.map((shot) => ({ params: { slug: shot.entry.id }, props: { shot, used: playsUsing(topics, shot) } }));
+}
+
+const { shot, used } = Astro.props as { shot: Shot; used: ReturnType<typeof playsUsing> };
+const { title, summary, draft, clips } = shot.entry.data;
+const { Content } = await render(shot.entry);
+---
+
+<Base title={title} description={summary}>
+  <div class="shot">
+    <SiteHeader />
+    {
+      draft && (
+        <p class="draft">
+          <strong>Draft.</strong> It shows on your own computer and on a branch's preview address, never on the live site. Once you've
+          checked it, set <code>draft: false</code> in <code>src/content/shots/{shot.entry.id}.md</code>.
+        </p>
+      )
+    }
+    <main>
+      <header>
+        <p class="crumb"><a href="/#shots">Shots</a></p>
+        <h1>{title}</h1>
+        <p class="summary">{summary}</p>
+      </header>
+
+      <div class="prose body"><Content /></div>
+
+      {
+        clips.length > 0 && (
+          <section class="clips" aria-labelledby="clips-h">
+            <h2 id="clips-h">Watch a coach</h2>
+            <p class="note">Each clip starts at the moment that shows it. They're other coaches' videos, played on YouTube's own player.</p>
+            <div class="clip-list">
+              {clips.map((clip) => (
+                <Clip {...clip} />
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      {
+        used.length > 0 && (
+          <section class="used" aria-labelledby="used-h">
+            <h2 id="used-h">Where it's the right play</h2>
+            <ul>
+              {used.map(({ topic, play }) => (
+                <li>
+                  <a href={play.level === 'all' ? topic.url : `${topic.url}#${play.level}`}>
+                    <span class="name">{topic.entry.data.title}</span>
+                    <span class="level">{LEVEL_INFO[play.level].name}: {play.entry.data.play}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </main>
+    <SiteFooter />
+  </div>
+</Base>
+
+<style>
+  .shot {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+  main {
+    display: grid;
+    gap: 40px;
+    padding: 28px 0 56px;
+  }
+  .draft {
+    margin: 4px 0 8px;
+    padding: 12px 14px;
+    background: #fff4b8;
+    color: #3d3300;
+    border-left: 5px solid var(--decide);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .draft code {
+    font-size: 14px;
+  }
+  .crumb {
+    font: 600 16px/1 var(--text);
+    margin-bottom: 14px;
+  }
+  .crumb a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .crumb a::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+  h1 {
+    font: 700 clamp(50px, 14vw, 84px) / 0.92 var(--display);
+    letter-spacing: -0.01em;
+  }
+  .summary {
+    margin-top: 16px;
+    max-width: 26em;
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .body :global(h2),
+  h2 {
+    font: 700 32px/1.02 var(--display);
+  }
+  .body :global(h2) {
+    margin-top: 1.4em;
+  }
+  .body :global(h2:first-child) {
+    margin-top: 0;
+  }
+  .note {
+    margin: 8px 0 16px;
+    color: var(--ink-soft);
+    font-size: 16px;
+    max-width: 34em;
+  }
+  .clip-list {
+    display: grid;
+    gap: 28px;
+  }
+  .used ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 12px;
+  }
+  .used li {
+    border-top: 1px solid var(--rule);
+  }
+  .used li:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+  .used a {
+    display: grid;
+    gap: 3px;
+    padding: 14px 0 16px;
+    text-decoration: none;
+  }
+  .used .name {
+    font: 700 26px/1.05 var(--display);
+  }
+  .used a:hover .name {
+    color: var(--kit-ink);
+  }
+  .used .level {
+    color: var(--ink-soft);
+    font-size: 16px;
+  }
+  @media (min-width: 900px) {
+    .shot {
+      padding: 0 clamp(24px, 4vw, 56px);
+    }
+    main {
+      padding-top: 48px;
+    }
+    .clip-list {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

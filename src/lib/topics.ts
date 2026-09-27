@@ -24,6 +24,27 @@ export interface Play {
   entry: CollectionEntry<'plays'>;
   sceneName: string;
   scene: Scene | ChapteredScene;
+  /** The shots it uses, each with a link once its page is shown. */
+  shots: ShotLink[];
+}
+
+export interface ShotLink {
+  title: string;
+  url?: string | undefined;
+}
+
+export interface Shot {
+  entry: CollectionEntry<'shots'>;
+  url: string;
+}
+
+/** The shot pages this build shows: published ones, plus drafts wherever drafts show. */
+export async function getShots(): Promise<Shot[]> {
+  const shots = await getCollection('shots');
+  return shots
+    .filter((s) => showDrafts || !s.data.draft)
+    .map((entry) => ({ entry, url: `/shots/${entry.id}` }))
+    .sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
 }
 
 export interface Topic {
@@ -42,8 +63,20 @@ const branch = process.env.WORKERS_CI_BRANCH;
 export const showDrafts = import.meta.env.DEV || (!!branch && branch !== 'main');
 
 export async function getTopics(): Promise<Topic[]> {
-  const [topics, plays] = await Promise.all([getCollection('topics'), getCollection('plays')]);
+  const [topics, plays, shotFiles, shown] = await Promise.all([getCollection('topics'), getCollection('plays'), getCollection('shots'), getShots()]);
   const problems: string[] = [];
+
+  // A play names its shots by title. Every name must have a shot file; it's a link once that page is shown.
+  const shotsOf = (play: CollectionEntry<'plays'>): ShotLink[] =>
+    play.data.shots.map((name) => {
+      const same = (title: string) => title.toLowerCase() === name.toLowerCase();
+      const file = shotFiles.find((s) => same(s.data.title));
+      if (!file)
+        problems.push(
+          `src/content/plays/${play.id}.md names the shot "${name}", which has no page. Use one of: ${shotFiles.map((s) => s.data.title).join(', ')}.`,
+        );
+      return { title: file?.data.title ?? name, url: shown.find((s) => same(s.entry.data.title))?.url };
+    });
 
   for (const play of plays) {
     const topicId = play.id.slice(0, play.id.lastIndexOf('.'));
@@ -79,13 +112,18 @@ export async function getTopics(): Promise<Topic[]> {
         problems.push(`src/content/plays/${id}.md needs the scene "${sceneName}", which isn't listed in src/scenes/index.ts.`);
         continue;
       }
-      found.push({ level, entry: play, sceneName, scene });
+      found.push({ level, entry: play, sceneName, scene, shots: shotsOf(play) });
     }
     if (found.length === levels.length && (showDrafts || !entry.data.draft)) result.push({ entry, url: `/situations/${entry.id}`, plays: found });
   }
 
   if (problems.length) throw new Error(`The topics don't line up:\n- ${problems.join('\n- ')}`);
   return result.sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
+}
+
+/** Every play that uses a shot, for the "Used in" list on the shot's page. */
+export function playsUsing(topics: readonly Topic[], shot: Shot): { topic: Topic; play: Play }[] {
+  return topics.flatMap((topic) => topic.plays.filter((play) => play.shots.some((s) => s.url === shot.url)).map((play) => ({ topic, play })));
 }
 
 /** The scenes that get a test page: every scene wherever drafts show, but only published topics' in the live site. */

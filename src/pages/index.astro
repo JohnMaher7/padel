@@ -7,9 +7,9 @@ import PathStop from '../components/PathStop.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import Base from '../layouts/Base.astro';
-import { getPaths, getTopics } from '../lib/topics';
+import { getPaths, getShots, getTopics } from '../lib/topics';
 
-const [topics, paths] = await Promise.all([getTopics(), getPaths()]);
+const [topics, paths, shots] = await Promise.all([getTopics(), getPaths(), getShots()]);
 const situations = topics.filter((t) => t.entry.data.kind === 'situation');
 const start = paths.find((p) => p.id === 'start-here');
 if (!start) throw new Error('The home page leads with the "Start here" path. Add src/content/paths/start-here.yaml.');
@@ -81,6 +81,26 @@ const first = start.steps.find((s) => s.shown);
           )
         }
       </section>
+
+      {
+        shots.length > 0 && (
+          <section class="shots" id="shots" aria-labelledby="shots-h">
+            <h2 id="shots-h">Shots</h2>
+            <p class="shots-lede">How to play the shots the situations call for, with coaches' clips.</p>
+            <ul class="list">
+              {shots.map((s) => (
+                <li>
+                  <a href={s.url}>
+                    <span class="name">{s.entry.data.title}</span>
+                    <span class="sum">{s.entry.data.summary}</span>
+                  </a>
+                  {s.entry.data.draft && <span class="draft">Draft</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
     </main>
     <SiteFooter />
   </div>
@@ -284,6 +304,11 @@ const first = start.steps.find((s) => s.shown);
     font: 700 14px/1.2 var(--display);
     border-radius: 2px;
   }
+  .shots-lede {
+    margin-bottom: 12px;
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
   .empty {
     padding: 16px 0;
     border-top: 1px solid var(--rule);
@@ -301,12 +326,15 @@ const first = start.steps.find((s) => s.shown);
       column-gap: clamp(40px, 6vw, 96px);
     }
     main {
-      grid-template-areas: 'intro start' 'jump jump';
+      grid-template-areas: 'intro start' 'jump jump' 'shots .';
       row-gap: 72px;
       padding-top: 56px;
     }
     .intro {
       grid-area: intro;
+    }
+    .shots {
+      grid-area: shots;
     }
     .start {
       grid-area: start;

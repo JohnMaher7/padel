@@ -123,17 +123,45 @@ html[data-level='advanced'] [data-only='beginner'] {
   list-style: none;
 }
 
-.prose li {
+.prose ul > li {
   position: relative;
   padding-left: 26px;
 }
 
-.prose li + li {
+.prose ul > li + li {
   margin-top: 0.7em;
 }
 
+/* Numbered steps: the number in the display face, in turf blue. */
+.prose ol {
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.prose ol > li {
+  position: relative;
+  padding-left: 34px;
+  counter-increment: step;
+}
+
+.prose ol > li + li {
+  margin-top: 0.7em;
+}
+
+.prose ol > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  text-align: center;
+  font: 700 22px/1.25 var(--display);
+  color: var(--turf-ink);
+}
+
 /* A short court line, in turf blue, as the bullet. */
-.prose li::before {
+.prose ul > li::before {
   content: '';
   position: absolute;
   left: 0;

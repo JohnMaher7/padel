@@ -9,6 +9,8 @@
 // fails the build.
 //
 // A path lists topics in order, like a playlist: src/content/paths/start-here.yaml.
+// A shot (src/content/shots/bandeja.md) is written technique plus coaching
+// clips; the plays that use it link to it.
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -45,6 +47,33 @@ const plays = defineCollection({
   }),
 });
 
+const shots = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/shots' }),
+  schema: z.object({
+    /** The shot's name, as plays write it in their `shots` list. */
+    title: z.string(),
+    /** One sentence under the title: what the shot is for. */
+    summary: z.string(),
+    /** Drafts show only in `npm run dev` and on previews. The owner sets this to false after checking the page. */
+    draft: z.boolean(),
+    /** Coaching clips on YouTube, each starting at the moment that shows the technique. */
+    clips: z
+      .array(
+        z.object({
+          youtube: z.string().regex(/^[A-Za-z0-9_-]{11}$/, 'a YouTube video id is the 11 characters after "v=" in its address'),
+          /** Seconds into the video where the relevant moment starts, and optionally where it ends. */
+          start: z.number().int().min(0),
+          end: z.number().int().positive().optional(),
+          /** What the clip shows, in our words. */
+          title: z.string(),
+          /** Whose video it is, credited under the clip. */
+          channel: z.string(),
+        }),
+      )
+      .default([]),
+  }),
+});
+
 /** src/lib/paths.ts checks that every step names a real topic, or has a "soon" name until it's written. */
 const paths = defineCollection({
   loader: glob({ pattern: '*.yaml', base: './src/content/paths' }),
@@ -65,4 +94,4 @@ const paths = defineCollection({
   }),
 });
 
-export const collections = { topics, plays, paths };
+export const collections = { topics, plays, paths, shots };

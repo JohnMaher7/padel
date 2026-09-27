@@ -148,10 +148,15 @@ const only = (level: string) => (tabbed ? level : undefined);
               <p.Content />
             </div>
 
-            {p.entry.data.shots.length > 0 && (
+            {p.shots.length > 0 && (
               <p class="shots">
-                {/* These become links once the shot pages exist. */}
-                Shots in this play: {p.entry.data.shots.join(', ')}
+                {p.shots.length === 1 ? 'The shot' : 'Shots'} in this play:{' '}
+                {p.shots.map((shot, i) => (
+                  <>
+                    {i > 0 && ', '}
+                    {shot.url ? <a href={shot.url}>{shot.title}</a> : shot.title}
+                  </>
+                ))}
               </p>
             )}
           </section>
